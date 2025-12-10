@@ -42,7 +42,8 @@ function TreeNode({ node, level }: TreeNodeProps) {
   };
 
   const handleCopyXPath = () => {
-    const pathToCopy = isXmlNode(node) && 'xpath' in node ? node.xpath : nodePath;
+    const pathToCopy =
+      isXmlNode(node) && 'xpath' in node ? node.xpath : nodePath;
     navigator.clipboard.writeText(pathToCopy);
     // Could add a toast notification here
   };
@@ -69,11 +70,20 @@ function TreeNode({ node, level }: TreeNodeProps) {
             ))}
           </span>
         )}
-        {nodeValue && (
-          <span className="node-text">: {nodeValue}</span>
-        )}
-        <button className="copy-xpath-button" onClick={handleCopyXPath} title="Copy Path">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        {nodeValue && <span className="node-text">: {nodeValue}</span>}
+        <button
+          className="copy-xpath-button"
+          onClick={handleCopyXPath}
+          title="Copy Path"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
           </svg>
@@ -90,4 +100,3 @@ function TreeNode({ node, level }: TreeNodeProps) {
     </div>
   );
 }
-

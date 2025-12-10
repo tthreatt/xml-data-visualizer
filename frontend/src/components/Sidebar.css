@@ -1,7 +1,7 @@
 .sidebar {
   width: 280px;
-  background: #E8E4E0;
-  border-right: 1px solid #D4CFC8;
+  background: #e8e4e0;
+  border-right: 1px solid #d4cfc8;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -14,20 +14,20 @@
 
 .sidebar-header {
   padding: 2rem 1.5rem 1.5rem;
-  border-bottom: 1px solid #D4CFC8;
-  background: #DED9D3;
+  border-bottom: 1px solid #d4cfc8;
+  background: #ded9d3;
 }
 
 .sidebar-header h2 {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #3D3A35;
+  color: #3d3a35;
   margin: 0 0 0.5rem 0;
 }
 
 .sidebar-subtitle {
   font-size: 0.9rem;
-  color: #6B6760;
+  color: #6b6760;
   margin: 0;
 }
 
@@ -47,7 +47,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #6B6760;
+  color: #6b6760;
   margin: 0 0 0.75rem 0;
 }
 
@@ -64,7 +64,7 @@
   padding: 0.75rem 1rem;
   border: none;
   background: transparent;
-  color: #3D3A35;
+  color: #3d3a35;
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
@@ -75,17 +75,17 @@
 }
 
 .nav-button:hover:not(:disabled) {
-  background: #DED9D3;
-  color: #3D3A35;
+  background: #ded9d3;
+  color: #3d3a35;
 }
 
 .nav-button.active {
-  background: #C97D60;
-  color: #FFFCF9;
+  background: #c97d60;
+  color: #fffcf9;
 }
 
 .nav-button.active:hover {
-  background: #B86A4F;
+  background: #b86a4f;
 }
 
 .nav-button:disabled {
@@ -98,15 +98,15 @@
 }
 
 .reset-button {
-  color: #8B7355;
-  border: 1px solid #D4CFC8;
-  background: #FFFCF9;
+  color: #8b7355;
+  border: 1px solid #d4cfc8;
+  background: #fffcf9;
 }
 
 .reset-button:hover {
-  background: #F7F5F3;
-  border-color: #C97D60;
-  color: #C97D60;
+  background: #f7f5f3;
+  border-color: #c97d60;
+  color: #c97d60;
 }
 
 @media (max-width: 768px) {

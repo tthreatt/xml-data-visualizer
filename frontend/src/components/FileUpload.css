@@ -4,26 +4,26 @@
 }
 
 .file-upload-area {
-  border: 3px dashed #C97D60;
+  border: 3px dashed #c97d60;
   border-radius: 16px;
   padding: 4rem 3rem;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: #FFFCF9;
+  background: #fffcf9;
   box-shadow: 0 4px 12px rgba(61, 58, 53, 0.08);
 }
 
 .file-upload-area:hover {
-  border-color: #B86A4F;
-  background: #F7F5F3;
+  border-color: #b86a4f;
+  background: #f7f5f3;
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(61, 58, 53, 0.12);
 }
 
 .file-upload-area.dragging {
-  border-color: #9CAF88;
-  background: #F7F5F3;
+  border-color: #9caf88;
+  background: #f7f5f3;
   transform: scale(1.02);
   box-shadow: 0 8px 20px rgba(61, 58, 53, 0.15);
 }
@@ -41,31 +41,31 @@
 }
 
 .upload-icon {
-  color: #C97D60;
+  color: #c97d60;
   margin-bottom: 0.5rem;
 }
 
 .file-upload-area h2 {
-  color: #3D3A35;
+  color: #3d3a35;
   margin: 0;
   font-size: 1.75rem;
   font-weight: 600;
 }
 
 .file-upload-area p {
-  color: #6B6760;
+  color: #6b6760;
   margin: 0;
   font-size: 1rem;
 }
 
 .file-info {
   font-size: 0.9rem;
-  color: #8B7355;
+  color: #8b7355;
 }
 
 .spinner {
-  border: 4px solid #E8E4E0;
-  border-top: 4px solid #C97D60;
+  border: 4px solid #e8e4e0;
+  border-top: 4px solid #c97d60;
   border-radius: 50%;
   width: 48px;
   height: 48px;
@@ -84,15 +84,14 @@
 .error-message {
   margin-top: 1.5rem;
   padding: 1.25rem;
-  background: #FFFCF9;
-  border: 1px solid #D4CFC8;
-  border-left: 4px solid #C97D60;
+  background: #fffcf9;
+  border: 1px solid #d4cfc8;
+  border-left: 4px solid #c97d60;
   border-radius: 8px;
-  color: #3D3A35;
+  color: #3d3a35;
   box-shadow: 0 2px 4px rgba(61, 58, 53, 0.05);
 }
 
 .error-message strong {
-  color: #8B7355;
+  color: #8b7355;
 }
-

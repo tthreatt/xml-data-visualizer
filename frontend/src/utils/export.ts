@@ -3,7 +3,10 @@ import { XmlNode, XmlFlattenedRecord } from '../types/xml';
 /**
  * Flatten XML node structure into list of records.
  */
-export function flattenXml(node: XmlNode, result: XmlFlattenedRecord[] = []): XmlFlattenedRecord[] {
+export function flattenXml(
+  node: XmlNode,
+  result: XmlFlattenedRecord[] = []
+): XmlFlattenedRecord[] {
   const record: XmlFlattenedRecord = {
     path: node.path,
     tag: node.tag,
@@ -36,7 +39,12 @@ export function toCSV(records: XmlFlattenedRecord[]): string {
     });
   });
 
-  const columns = ['path', 'tag', 'text', ...Array.from(allAttributeKeys).map((k) => `attr:${k}`)];
+  const columns = [
+    'path',
+    'tag',
+    'text',
+    ...Array.from(allAttributeKeys).map((k) => `attr:${k}`),
+  ];
 
   // Create CSV header
   const header = columns.join(',');
@@ -60,7 +68,11 @@ export function toCSV(records: XmlFlattenedRecord[]): string {
         }
 
         // Escape CSV values (handle commas and quotes)
-        if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+        if (
+          value.includes(',') ||
+          value.includes('"') ||
+          value.includes('\n')
+        ) {
           value = `"${value.replace(/"/g, '""')}"`;
         }
         return value;
@@ -81,7 +93,11 @@ export function toJSON(records: XmlFlattenedRecord[]): string {
 /**
  * Download data as file.
  */
-export function downloadFile(content: string, filename: string, mimeType: string): void {
+export function downloadFile(
+  content: string,
+  filename: string,
+  mimeType: string
+): void {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -96,7 +112,10 @@ export function downloadFile(content: string, filename: string, mimeType: string
 /**
  * Export XML data to CSV.
  */
-export function exportToCSV(node: XmlNode, filename: string = 'xml-data.csv'): void {
+export function exportToCSV(
+  node: XmlNode,
+  filename: string = 'xml-data.csv'
+): void {
   const records = flattenXml(node);
   const csv = toCSV(records);
   downloadFile(csv, filename, 'text/csv');
@@ -105,9 +124,11 @@ export function exportToCSV(node: XmlNode, filename: string = 'xml-data.csv'): v
 /**
  * Export XML data to JSON.
  */
-export function exportToJSON(node: XmlNode, filename: string = 'xml-data.json'): void {
+export function exportToJSON(
+  node: XmlNode,
+  filename: string = 'xml-data.json'
+): void {
   const records = flattenXml(node);
   const json = toJSON(records);
   downloadFile(json, filename, 'application/json');
 }
-

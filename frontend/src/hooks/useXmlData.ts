@@ -32,7 +32,8 @@ export function useXmlData() {
     } catch (err) {
       if (axios.isAxiosError(err)) {
         setError(
-          err.response?.data?.detail || 'Failed to parse XML file. Please check the file format.'
+          err.response?.data?.detail ||
+            'Failed to parse XML file. Please check the file format.'
         );
       } else {
         setError('An unexpected error occurred');
@@ -43,7 +44,10 @@ export function useXmlData() {
   }, []);
 
   const search = useCallback(
-    async (query: string, searchIn: string[] = ['tag', 'attribute', 'text']) => {
+    async (
+      query: string,
+      searchIn: string[] = ['tag', 'attribute', 'text']
+    ) => {
       if (!xmlData) {
         return;
       }
@@ -83,4 +87,3 @@ export function useXmlData() {
     reset,
   };
 }
-

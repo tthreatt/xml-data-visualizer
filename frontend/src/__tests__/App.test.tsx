@@ -12,4 +12,3 @@ describe('App', () => {
     expect(screen.getByText('Upload XML File')).toBeInTheDocument();
   });
 });
-

@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import FileUpload from './components/FileUpload';
 import TreeView from './components/TreeView';
 import TableView from './components/TableView';
+import CountView from './components/CountView';
 import SearchBar from './components/SearchBar';
 import Sidebar from './components/Sidebar';
 import { useXmlData } from './hooks/useXmlData';
@@ -13,7 +14,13 @@ type DataMode = 'xml' | 'csv';
 
 function App() {
   const [dataMode, setDataMode] = useState<DataMode>('xml');
-  const { xmlData, loading: xmlLoading, error: xmlError, uploadFile: uploadXmlFile, reset: resetXml } = useXmlData();
+  const {
+    xmlData,
+    loading: xmlLoading,
+    error: xmlError,
+    uploadFile: uploadXmlFile,
+    reset: resetXml,
+  } = useXmlData();
   const {
     importId,
     importData,
@@ -30,7 +37,7 @@ function App() {
     fetchColumns,
     reset: resetCsv,
   } = useCsvData();
-  const [viewMode, setViewMode] = useState<'tree' | 'table'>('tree');
+  const [viewMode, setViewMode] = useState<'tree' | 'table' | 'count'>('tree');
 
   const loading = dataMode === 'xml' ? xmlLoading : csvLoading;
   const error = dataMode === 'xml' ? xmlError : csvError;
@@ -111,7 +118,9 @@ function App() {
             </div>
             <FileUpload
               onUpload={handleUpload}
-              onUploadMultiple={dataMode === 'csv' ? handleUploadMultiple : undefined}
+              onUploadMultiple={
+                dataMode === 'csv' ? handleUploadMultiple : undefined
+              }
               loading={loading}
               error={error}
               fileType={dataMode}
@@ -130,10 +139,12 @@ function App() {
                   <strong>CSV Data Loaded</strong>
                 </p>
                 <p>
-                  {importData.total_rows.toLocaleString()} rows, {importData.total_columns} columns
+                  {importData.total_rows.toLocaleString()} rows,{' '}
+                  {importData.total_columns} columns
                 </p>
                 <p className="notice-subtle">
-                  Use Table View to explore the data with pagination and filtering.
+                  Use Table View to explore the data with pagination and
+                  filtering.
                 </p>
               </div>
             )}
@@ -144,11 +155,13 @@ function App() {
               ) : importData ? (
                 <div className="tree-view-message">
                   <p>Tree view is not available for CSV data.</p>
-                  <p>CSV data is tabular - each row represents a separate record.</p>
+                  <p>
+                    CSV data is tabular - each row represents a separate record.
+                  </p>
                   <p>Please use Table View to explore the data.</p>
                 </div>
               ) : null
-            ) : (
+            ) : viewMode === 'table' ? (
               dataMode === 'xml' && xmlData ? (
                 <TableView data={xmlData.root} />
               ) : importData && csvRows ? (
@@ -166,7 +179,21 @@ function App() {
                   importId={importId}
                 />
               ) : null
-            )}
+            ) : viewMode === 'count' ? (
+              dataMode === 'xml' && xmlData ? (
+                <CountView data={xmlData.root} />
+              ) : importData && csvRows ? (
+                <CountView
+                  csvRows={csvRows}
+                  csvHeaders={importData.headers}
+                  selectedColumns={selectedColumns}
+                  setSelectedColumns={setSelectedColumns}
+                  columnMetadata={columnMetadata}
+                  fetchColumns={() => fetchColumns(importId!)}
+                  importId={importId}
+                />
+              ) : null
+            ) : null}
           </>
         )}
       </main>
@@ -175,4 +202,3 @@ function App() {
 }
 
 export default App;
-

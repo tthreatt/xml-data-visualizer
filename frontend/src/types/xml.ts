@@ -19,4 +19,3 @@ export interface XmlFlattenedRecord {
   attributes: Record<string, string>;
   text: string | null;
 }
-

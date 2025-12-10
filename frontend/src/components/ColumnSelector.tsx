@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import './ColumnSelector.css';
 
 interface ColumnSelectorProps {
@@ -8,6 +8,8 @@ interface ColumnSelectorProps {
   onClose?: () => void;
 }
 
+const PREFERENCES_KEY = 'csv-column-preferences';
+
 export default function ColumnSelector({
   columns,
   selectedColumns,
@@ -16,41 +18,45 @@ export default function ColumnSelector({
 }: ColumnSelectorProps) {
   const [searchText, setSearchText] = useState('');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [saveMessage, setSaveMessage] = useState<string>('');
+  const [loadMessage, setLoadMessage] = useState<string>('');
 
   // Group columns by prefix
   const columnGroups = useMemo(() => {
     const groups: Map<string, string[]> = new Map();
-    
+
     for (const col of columns) {
       const underscoreIndex = col.indexOf('_');
-      const prefix = underscoreIndex > 0 ? col.substring(0, underscoreIndex) : col;
-      
+      const prefix =
+        underscoreIndex > 0 ? col.substring(0, underscoreIndex) : col;
+
       if (!groups.has(prefix)) {
         groups.set(prefix, []);
       }
       groups.get(prefix)!.push(col);
     }
-    
+
     return groups;
   }, [columns]);
 
   // Filter columns by search text
   const filteredGroups = useMemo(() => {
     if (!searchText) return columnGroups;
-    
+
     const lowerSearch = searchText.toLowerCase();
     const filtered = new Map<string, string[]>();
-    
+
     columnGroups.forEach((cols, prefix) => {
-      const matchingCols = cols.filter(col => 
-        col.toLowerCase().includes(lowerSearch) || 
-        prefix.toLowerCase().includes(lowerSearch)
+      const matchingCols = cols.filter(
+        (col) =>
+          col.toLowerCase().includes(lowerSearch) ||
+          prefix.toLowerCase().includes(lowerSearch)
       );
       if (matchingCols.length > 0) {
         filtered.set(prefix, matchingCols);
       }
     });
-    
+
     return filtered;
   }, [columnGroups, searchText]);
 
@@ -88,15 +94,16 @@ export default function ColumnSelector({
 
   // Select education columns
   const selectEducation = () => {
-    const educationCols = columns.filter(col => 
-      col.toLowerCase().includes('education') || 
-      col.toLowerCase().includes('edu')
+    const educationCols = columns.filter(
+      (col) =>
+        col.toLowerCase().includes('education') ||
+        col.toLowerCase().includes('edu')
     );
     onSelectionChange(new Set(educationCols));
     // Expand education groups
     const eduGroups = new Set<string>();
     filteredGroups.forEach((cols, prefix) => {
-      if (cols.some(col => educationCols.includes(col))) {
+      if (cols.some((col) => educationCols.includes(col))) {
         eduGroups.add(prefix);
       }
     });
@@ -105,28 +112,74 @@ export default function ColumnSelector({
 
   // Toggle all columns in a group
   const toggleGroupSelection = (groupCols: string[]) => {
-    const allSelected = groupCols.every(col => selectedColumns.has(col));
+    const allSelected = groupCols.every((col) => selectedColumns.has(col));
     const newSelected = new Set(selectedColumns);
-    
+
     if (allSelected) {
       // Deselect all in group
-      groupCols.forEach(col => newSelected.delete(col));
+      groupCols.forEach((col) => newSelected.delete(col));
     } else {
       // Select all in group
-      groupCols.forEach(col => newSelected.add(col));
+      groupCols.forEach((col) => newSelected.add(col));
     }
-    
+
     onSelectionChange(newSelected);
   };
 
   // Check if group is fully selected
   const isGroupFullySelected = (groupCols: string[]) => {
-    return groupCols.length > 0 && groupCols.every(col => selectedColumns.has(col));
+    return (
+      groupCols.length > 0 && groupCols.every((col) => selectedColumns.has(col))
+    );
   };
 
   // Check if group is partially selected
   const isGroupPartiallySelected = (groupCols: string[]) => {
-    return groupCols.some(col => selectedColumns.has(col)) && !isGroupFullySelected(groupCols);
+    return (
+      groupCols.some((col) => selectedColumns.has(col)) &&
+      !isGroupFullySelected(groupCols)
+    );
+  };
+
+  // Save preferences to localStorage
+  const savePreferences = () => {
+    try {
+      const preferences = Array.from(selectedColumns);
+      localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
+      setSaveMessage('Preferences saved!');
+      setTimeout(() => setSaveMessage(''), 2000);
+    } catch (error) {
+      setSaveMessage('Failed to save preferences');
+      setTimeout(() => setSaveMessage(''), 2000);
+    }
+  };
+
+  // Load preferences from localStorage
+  const loadPreferences = () => {
+    try {
+      const saved = localStorage.getItem(PREFERENCES_KEY);
+      if (saved) {
+        const preferences: string[] = JSON.parse(saved);
+        // Only load preferences that exist in current columns
+        const validPreferences = preferences.filter((col) =>
+          columns.includes(col)
+        );
+        if (validPreferences.length > 0) {
+          onSelectionChange(new Set(validPreferences));
+          setLoadMessage(`Loaded ${validPreferences.length} saved columns`);
+          setTimeout(() => setLoadMessage(''), 2000);
+        } else {
+          setLoadMessage('No matching columns found in saved preferences');
+          setTimeout(() => setLoadMessage(''), 2000);
+        }
+      } else {
+        setLoadMessage('No saved preferences found');
+        setTimeout(() => setLoadMessage(''), 2000);
+      }
+    } catch (error) {
+      setLoadMessage('Failed to load preferences');
+      setTimeout(() => setLoadMessage(''), 2000);
+    }
   };
 
   return (
@@ -149,7 +202,10 @@ export default function ColumnSelector({
           className="column-selector-search"
         />
         <div className="column-selector-actions">
-          <button onClick={selectEducation} className="column-selector-action-btn">
+          <button
+            onClick={selectEducation}
+            className="column-selector-action-btn"
+          >
             Show Education
           </button>
           <button onClick={selectAll} className="column-selector-action-btn">
@@ -158,13 +214,34 @@ export default function ColumnSelector({
           <button onClick={deselectAll} className="column-selector-action-btn">
             Deselect All
           </button>
+          <button
+            onClick={savePreferences}
+            className="column-selector-action-btn column-selector-save-btn"
+          >
+            Save Preferences
+          </button>
+          <button
+            onClick={loadPreferences}
+            className="column-selector-action-btn column-selector-load-btn"
+          >
+            Load Preferences
+          </button>
         </div>
+        {(saveMessage || loadMessage) && (
+          <div
+            className={`column-selector-message ${saveMessage ? 'save-message' : 'load-message'}`}
+          >
+            {saveMessage || loadMessage}
+          </div>
+        )}
       </div>
 
       <div className="column-selector-content">
         <div className="column-selector-info">
           {selectedColumns.size > 0 ? (
-            <span>{selectedColumns.size} of {columns.length} columns selected</span>
+            <span>
+              {selectedColumns.size} of {columns.length} columns selected
+            </span>
           ) : (
             <span>No columns selected (showing all)</span>
           )}
@@ -198,26 +275,26 @@ export default function ColumnSelector({
                         className="column-group-checkbox"
                       />
                       <span className="column-group-name">{prefix}</span>
-                      <span className="column-group-count">({groupCols.length})</span>
+                      <span className="column-group-count">
+                        ({groupCols.length})
+                      </span>
                     </label>
                   </div>
                   {isExpanded && (
                     <div className="column-group-items">
-                      {groupCols
-                        .sort()
-                        .map((col) => (
-                          <label key={col} className="column-item">
-                            <input
-                              type="checkbox"
-                              checked={selectedColumns.has(col)}
-                              onChange={() => toggleColumn(col)}
-                              className="column-checkbox"
-                            />
-                            <span className="column-name" title={col}>
-                              {col.substring(prefix.length + 1) || col}
-                            </span>
-                          </label>
-                        ))}
+                      {groupCols.sort().map((col) => (
+                        <label key={col} className="column-item">
+                          <input
+                            type="checkbox"
+                            checked={selectedColumns.has(col)}
+                            onChange={() => toggleColumn(col)}
+                            className="column-checkbox"
+                          />
+                          <span className="column-name" title={col}>
+                            {col.substring(prefix.length + 1) || col}
+                          </span>
+                        </label>
+                      ))}
                     </div>
                   )}
                 </div>

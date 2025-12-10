@@ -81,7 +81,8 @@ export default function FileUpload({
     fileInputRef.current?.click();
   };
 
-  const acceptTypes = fileType === 'xml' ? '.xml,application/xml,text/xml' : '.csv,text/csv';
+  const acceptTypes =
+    fileType === 'xml' ? '.xml,application/xml,text/xml' : '.csv,text/csv';
   const fileTypeLabel = fileType.toUpperCase();
   const maxSize = fileType === 'xml' ? '50MB' : '100MB';
   const uploadText = multiple
@@ -110,7 +111,9 @@ export default function FileUpload({
         {loading ? (
           <div className="upload-content">
             <div className="spinner"></div>
-            <p>Processing {fileTypeLabel} file{multiple ? 's' : ''}...</p>
+            <p>
+              Processing {fileTypeLabel} file{multiple ? 's' : ''}...
+            </p>
           </div>
         ) : (
           <div className="upload-content">
@@ -127,10 +130,14 @@ export default function FileUpload({
               <polyline points="17 8 12 3 7 8" />
               <line x1="12" y1="3" x2="12" y2="15" />
             </svg>
-            <h2>Upload {fileTypeLabel} File{multiple ? 's' : ''}</h2>
+            <h2>
+              Upload {fileTypeLabel} File{multiple ? 's' : ''}
+            </h2>
             <p>{uploadText}</p>
             <p className="file-info">Maximum file size: {maxSize}</p>
-            {multiple && <p className="file-info">You can select multiple files</p>}
+            {multiple && (
+              <p className="file-info">You can select multiple files</p>
+            )}
           </div>
         )}
       </div>
@@ -143,4 +150,3 @@ export default function FileUpload({
     </div>
   );
 }
-

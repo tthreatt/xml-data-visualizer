@@ -2,7 +2,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #FAF8F5;
+  background: #faf8f5;
 }
 
 .app-main {
@@ -24,7 +24,7 @@
 .mode-toggle {
   display: flex;
   gap: 0.5rem;
-  background: #FFFCF9;
+  background: #fffcf9;
   padding: 0.5rem;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(61, 58, 53, 0.08);
@@ -43,18 +43,18 @@
   font-weight: 500;
   font-size: 0.95rem;
   transition: all 0.2s ease;
-  color: #6B6760;
+  color: #6b6760;
   flex: 1;
 }
 
 .mode-toggle button:hover {
-  background: #F7F5F3;
-  color: #3D3A35;
+  background: #f7f5f3;
+  color: #3d3a35;
 }
 
 .mode-toggle button.active {
-  background: #C97D60;
-  color: #FFFCF9;
+  background: #c97d60;
+  color: #fffcf9;
 }
 
 .content-header {
@@ -62,25 +62,25 @@
 }
 
 .large-dataset-notice {
-  background: #FFFCF9;
-  border: 1px solid #D4CFC8;
-  border-left: 4px solid #9CAF88;
+  background: #fffcf9;
+  border: 1px solid #d4cfc8;
+  border-left: 4px solid #9caf88;
   border-radius: 8px;
   padding: 1.25rem;
   margin-bottom: 1.5rem;
-  color: #3D3A35;
+  color: #3d3a35;
   box-shadow: 0 2px 4px rgba(61, 58, 53, 0.05);
 }
 
 .large-dataset-notice p {
   margin: 0.5rem 0;
-  color: #3D3A35;
+  color: #3d3a35;
 }
 
 .large-dataset-notice p:first-child {
   margin-top: 0;
   font-weight: 600;
-  color: #8B7355;
+  color: #8b7355;
 }
 
 .large-dataset-notice p:last-child {
@@ -89,30 +89,30 @@
 
 .large-dataset-notice .notice-subtle {
   font-size: 0.9rem;
-  color: #6B6760;
+  color: #6b6760;
 }
 
 .tree-view-message {
-  background: #FFFCF9;
-  border: 1px solid #D4CFC8;
-  border-left: 4px solid #9CAF88;
+  background: #fffcf9;
+  border: 1px solid #d4cfc8;
+  border-left: 4px solid #9caf88;
   border-radius: 8px;
   padding: 2.5rem;
   margin: 2rem 0;
   text-align: center;
-  color: #3D3A35;
+  color: #3d3a35;
   box-shadow: 0 2px 8px rgba(61, 58, 53, 0.08);
 }
 
 .tree-view-message p {
   margin: 0.75rem 0;
-  color: #6B6760;
+  color: #6b6760;
 }
 
 .tree-view-message p:first-child {
   font-weight: 600;
   font-size: 1.1rem;
-  color: #8B7355;
+  color: #8b7355;
 }
 
 @media (max-width: 768px) {
@@ -128,4 +128,3 @@
     max-width: 100%;
   }
 }
-

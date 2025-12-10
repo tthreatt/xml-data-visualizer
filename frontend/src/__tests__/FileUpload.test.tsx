@@ -21,10 +21,13 @@ describe('FileUpload', () => {
   it('shows error message', () => {
     const errorMessage = 'Invalid XML file';
     render(
-      <FileUpload onUpload={mockOnUpload} loading={false} error={errorMessage} />
+      <FileUpload
+        onUpload={mockOnUpload}
+        loading={false}
+        error={errorMessage}
+      />
     );
     expect(screen.getByText(/Error:/)).toBeInTheDocument();
     expect(screen.getByText(errorMessage)).toBeInTheDocument();
   });
 });
-

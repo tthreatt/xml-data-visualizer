@@ -92,7 +92,11 @@ export default function TableView({
       return null; // No grouping for XML
     }
 
-    const allCols = isCsvApiMode ? (csvHeaders || []) : (isCsvData(data) ? data.headers : []);
+    const allCols = isCsvApiMode
+      ? csvHeaders || []
+      : isCsvData(data)
+        ? data.headers
+        : [];
     if (allCols.length === 0) return null;
 
     // Determine which columns to show
@@ -124,7 +128,13 @@ export default function TableView({
     }
 
     return groups;
-  }, [data, csvHeaders, effectiveSelectedColumns, isCsvApiMode, setSelectedColumns]);
+  }, [
+    data,
+    csvHeaders,
+    effectiveSelectedColumns,
+    isCsvApiMode,
+    setSelectedColumns,
+  ]);
 
   // Determine columns (flattened from groups for backward compatibility)
   const columns = useMemo(() => {
@@ -177,7 +187,14 @@ export default function TableView({
       return Array.from(cols);
     }
     return [];
-  }, [data, csvHeaders, effectiveSelectedColumns, isCsvApiMode, columnGroups, setSelectedColumns]);
+  }, [
+    data,
+    csvHeaders,
+    effectiveSelectedColumns,
+    isCsvApiMode,
+    columnGroups,
+    setSelectedColumns,
+  ]);
 
   // Get data to display
   const displayData = useMemo(() => {
@@ -224,8 +241,8 @@ export default function TableView({
       if (!filterText) return displayData;
       const lowerFilter = filterText.toLowerCase();
       return displayData.filter((record) =>
-        Object.values(record.attributes || {}).some((val) =>
-          val && val.toString().toLowerCase().includes(lowerFilter)
+        Object.values(record.attributes || {}).some(
+          (val) => val && val.toString().toLowerCase().includes(lowerFilter)
         )
       );
     } else {
@@ -234,16 +251,16 @@ export default function TableView({
       const lowerFilter = filterText.toLowerCase();
       return displayData.filter((record) => {
         if (isCsvData(data)) {
-          return Object.values(record.attributes || {}).some((val) =>
-            val && val.toString().toLowerCase().includes(lowerFilter)
+          return Object.values(record.attributes || {}).some(
+            (val) => val && val.toString().toLowerCase().includes(lowerFilter)
           );
         } else {
           return (
             record.path.toLowerCase().includes(lowerFilter) ||
             record.tag.toLowerCase().includes(lowerFilter) ||
             (record.text && record.text.toLowerCase().includes(lowerFilter)) ||
-            Object.values(record.attributes || {}).some((val) =>
-              val && val.toString().toLowerCase().includes(lowerFilter)
+            Object.values(record.attributes || {}).some(
+              (val) => val && val.toString().toLowerCase().includes(lowerFilter)
             )
           );
         }
@@ -290,7 +307,7 @@ export default function TableView({
     }
 
     const PERSON_ID_COLUMN = 'caqhProviderId';
-    
+
     // Check if caqhProviderId column exists
     if (!columns.includes(PERSON_ID_COLUMN)) {
       return sortedData; // No grouping if column doesn't exist
@@ -313,8 +330,11 @@ export default function TableView({
     }
 
     // Flatten groups maintaining order (groups are already sorted within)
-    const grouped: (typeof sortedData[0] & { _groupStart?: boolean; _personId?: string })[] = [];
-    
+    const grouped: ((typeof sortedData)[0] & {
+      _groupStart?: boolean;
+      _personId?: string;
+    })[] = [];
+
     // Add grouped rows with group markers
     groups.forEach((groupRows, personId) => {
       groupRows.forEach((row, index) => {
@@ -376,8 +396,10 @@ export default function TableView({
   const currentPageSizeValue = useMemo(() => {
     if (!isCsvApiMode || !csvPagination) return '100';
     // "all" is selected if pageSize is >= 10000 (our fallback) or equals totalCount
-    const isAllSelected = csvPagination.pageSize >= 10000 || 
-      (csvPagination.totalCount > 0 && csvPagination.pageSize === csvPagination.totalCount);
+    const isAllSelected =
+      csvPagination.pageSize >= 10000 ||
+      (csvPagination.totalCount > 0 &&
+        csvPagination.pageSize === csvPagination.totalCount);
     return isAllSelected ? 'all' : String(csvPagination.pageSize);
   }, [isCsvApiMode, csvPagination]);
 
@@ -398,13 +420,22 @@ export default function TableView({
             className="column-selector-button"
             title="Select columns to display"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M3 3h18v18H3z" />
               <path d="M3 9h18M9 3v18" />
             </svg>
             Columns
             {effectiveSelectedColumns.size > 0 && (
-              <span className="column-count-badge">{effectiveSelectedColumns.size}</span>
+              <span className="column-count-badge">
+                {effectiveSelectedColumns.size}
+              </span>
             )}
           </button>
         )}
@@ -426,9 +457,7 @@ export default function TableView({
           )}
         </span>
         {columns.length > 0 && (
-          <span className="table-count">
-            ({columns.length} columns shown)
-          </span>
+          <span className="table-count">({columns.length} columns shown)</span>
         )}
         {isCsvApiMode && csvPagination && onPageSizeChange && (
           <div className="page-size-selector">
@@ -471,7 +500,9 @@ export default function TableView({
             </span>
             <button
               onClick={() => handlePageChange(csvPagination.page + 1)}
-              disabled={csvPagination.page === csvPagination.totalPages || loading}
+              disabled={
+                csvPagination.page === csvPagination.totalPages || loading
+              }
               className="pagination-button"
             >
               Next
@@ -481,7 +512,10 @@ export default function TableView({
       </div>
 
       {showColumnSelector && isCsvApiMode && columnMetadata && (
-        <div className="column-selector-modal-overlay" onClick={() => setShowColumnSelector(false)}>
+        <div
+          className="column-selector-modal-overlay"
+          onClick={() => setShowColumnSelector(false)}
+        >
           <div onClick={(e) => e.stopPropagation()}>
             <ColumnSelector
               columns={columnMetadata.columns}
@@ -493,15 +527,17 @@ export default function TableView({
         </div>
       )}
 
-      {loading && (
-        <div className="loading-indicator">Loading data...</div>
-      )}
+      {loading && <div className="loading-indicator">Loading data...</div>}
 
       {columnGroups && (
         <div className="column-group-pills-wrapper">
           <div className="column-group-pills-container">
             {Array.from(columnGroups.entries()).map(([prefix]) => (
-              <span key={prefix} className="column-group-pill" title={`Group: ${prefix}`}>
+              <span
+                key={prefix}
+                className="column-group-pill"
+                title={`Group: ${prefix}`}
+              >
                 {prefix}
               </span>
             ))}
@@ -520,11 +556,15 @@ export default function TableView({
                     <th
                       key={column}
                       onClick={() => handleSort(column)}
-                      className={sortColumn === column ? `sorted ${sortDirection}` : ''}
+                      className={
+                        sortColumn === column ? `sorted ${sortDirection}` : ''
+                      }
                       title={column}
                     >
                       <span className="column-header">
-                        {isCsvApiMode || isCsvData(data) ? column : column.replace('attr:', '')}
+                        {isCsvApiMode || isCsvData(data)
+                          ? column
+                          : column.replace('attr:', '')}
                       </span>
                       {sortColumn === column && (
                         <span className="sort-indicator">
@@ -542,11 +582,15 @@ export default function TableView({
                   <th
                     key={column}
                     onClick={() => handleSort(column)}
-                    className={sortColumn === column ? `sorted ${sortDirection}` : ''}
+                    className={
+                      sortColumn === column ? `sorted ${sortDirection}` : ''
+                    }
                     title={column}
                   >
                     <span className="column-header">
-                      {isCsvApiMode || isCsvData(data) ? column : column.replace('attr:', '')}
+                      {isCsvApiMode || isCsvData(data)
+                        ? column
+                        : column.replace('attr:', '')}
                     </span>
                     {sortColumn === column && (
                       <span className="sort-indicator">
@@ -562,7 +606,7 @@ export default function TableView({
             {groupedData.map((record, index) => {
               const isGroupStart = (record as any)._groupStart;
               const personId = (record as any)._personId;
-              
+
               return (
                 <React.Fragment key={`fragment-${index}`}>
                   {isGroupStart && (
