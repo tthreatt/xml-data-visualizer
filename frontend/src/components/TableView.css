@@ -190,6 +190,52 @@
   background: #F7F5F3;
 }
 
+.column-selector-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border: 1px solid #D4CFC8;
+  border-radius: 8px;
+  background: #FFFCF9;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  color: #3D3A35;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.column-selector-button:hover {
+  background: #F7F5F3;
+  border-color: #C97D60;
+  color: #C97D60;
+}
+
+.column-count-badge {
+  background: #C97D60;
+  color: #FFFCF9;
+  border-radius: 12px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  min-width: 20px;
+  text-align: center;
+}
+
+.column-selector-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
 @media (max-width: 768px) {
   .table-controls {
     flex-direction: column;

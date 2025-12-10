@@ -23,6 +23,10 @@ function App() {
     uploadFiles: uploadCsvFiles,
     pagination: csvPagination,
     goToPage: csvGoToPage,
+    selectedColumns,
+    setSelectedColumns,
+    columnMetadata,
+    fetchColumns,
     reset: resetCsv,
   } = useCsvData();
   const [viewMode, setViewMode] = useState<'tree' | 'table'>('tree');
@@ -153,6 +157,11 @@ function App() {
                   csvPagination={csvPagination}
                   onPageChange={csvGoToPage}
                   loading={csvLoading}
+                  selectedColumns={selectedColumns}
+                  setSelectedColumns={setSelectedColumns}
+                  columnMetadata={columnMetadata}
+                  fetchColumns={() => fetchColumns(importId!)}
+                  importId={importId}
                 />
               ) : null
             )}

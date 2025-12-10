@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import axios from 'axios';
-import { CsvImportResponse, CsvRowsResponse } from '../types/csv';
+import { CsvImportResponse, CsvRowsResponse, CsvColumnsResponse } from '../types/csv';
 
 const API_BASE_URL = '/api/csv';
 
@@ -10,6 +10,8 @@ export function useCsvData() {
   const [rows, setRows] = useState<Record<string, string>[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedColumns, setSelectedColumns] = useState<Set<string>>(new Set());
+  const [columnMetadata, setColumnMetadata] = useState<CsvColumnsResponse | null>(null);
   const [pagination, setPagination] = useState({
     page: 1,
     pageSize: 100,
@@ -18,21 +20,26 @@ export function useCsvData() {
   });
 
   const fetchRows = useCallback(
-    async (id: number, page: number = 1, pageSize: number = 100) => {
+    async (id: number, page: number = 1, pageSize: number = 100, columns?: string[]) => {
       if (!id) return;
 
       setLoading(true);
       setError(null);
 
       try {
+        const params: Record<string, any> = {
+          page,
+          page_size: pageSize,
+        };
+        
+        // Only include columns param if columns are specified and not empty
+        if (columns && columns.length > 0) {
+          params.columns = columns;
+        }
+
         const response = await axios.get<CsvRowsResponse>(
           `${API_BASE_URL}/imports/${id}/rows`,
-          {
-            params: {
-              page,
-              page_size: pageSize,
-            },
-          }
+          { params }
         );
 
         setRows(response.data.rows);
@@ -50,6 +57,35 @@ export function useCsvData() {
         }
       } finally {
         setLoading(false);
+      }
+    },
+    []
+  );
+
+  const fetchColumns = useCallback(
+    async (id: number, prefix?: string) => {
+      if (!id) return null;
+
+      try {
+        const params: Record<string, any> = {};
+        if (prefix) {
+          params.prefix = prefix;
+        }
+
+        const response = await axios.get<CsvColumnsResponse>(
+          `${API_BASE_URL}/imports/${id}/columns`,
+          { params }
+        );
+
+        setColumnMetadata(response.data);
+        return response.data;
+      } catch (err) {
+        if (axios.isAxiosError(err)) {
+          setError(err.response?.data?.detail || 'Failed to fetch columns');
+        } else {
+          setError('An unexpected error occurred');
+        }
+        return null;
       }
     },
     []
@@ -78,6 +114,9 @@ export function useCsvData() {
       setImportId(response.data.import_id);
       setImportData(response.data);
       
+      // Fetch columns metadata
+      await fetchColumns(response.data.import_id);
+      
       // Fetch first page of rows
       await fetchRows(response.data.import_id, 1, 100);
     } catch (err) {
@@ -91,7 +130,7 @@ export function useCsvData() {
     } finally {
       setLoading(false);
     }
-  }, [fetchRows]);
+  }, [fetchRows, fetchColumns]);
 
   const searchRows = useCallback(
     async (query: string, columns?: string[]) => {
@@ -134,14 +173,33 @@ export function useCsvData() {
     [importId]
   );
 
+  // Refetch data when selected columns change (but not on initial mount)
+  useEffect(() => {
+    if (importId && pagination.page > 0 && rows.length > 0) {
+      const columnsToFetch = selectedColumns.size > 0 ? Array.from(selectedColumns) : undefined;
+      fetchRows(importId, pagination.page, pagination.pageSize, columnsToFetch);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedColumns]); // Only refetch when columns change, not on other changes
+
   const goToPage = useCallback(
     (page: number) => {
       if (importId) {
-        fetchRows(importId, page, pagination.pageSize);
+        const columnsToFetch = selectedColumns.size > 0 ? Array.from(selectedColumns) : undefined;
+        fetchRows(importId, page, pagination.pageSize, columnsToFetch);
       }
     },
-    [importId, pagination.pageSize, fetchRows]
+    [importId, pagination.pageSize, fetchRows, selectedColumns]
   );
+
+  const selectColumnsByPrefix = useCallback((prefix: string) => {
+    if (!columnMetadata) return;
+    
+    const matchingColumns = columnMetadata.columns.filter(col => 
+      col.toLowerCase().includes(prefix.toLowerCase())
+    );
+    setSelectedColumns(new Set(matchingColumns));
+  }, [columnMetadata]);
 
   const reset = useCallback(() => {
     setImportId(null);
@@ -149,6 +207,8 @@ export function useCsvData() {
     setRows([]);
     setLoading(false);
     setError(null);
+    setSelectedColumns(new Set());
+    setColumnMetadata(null);
     setPagination({
       page: 1,
       pageSize: 100,
@@ -164,10 +224,15 @@ export function useCsvData() {
     loading,
     error,
     pagination,
+    selectedColumns,
+    setSelectedColumns,
+    columnMetadata,
     uploadFiles,
     fetchRows,
+    fetchColumns,
     searchRows,
     goToPage,
+    selectColumnsByPrefix,
     reset,
   };
 }

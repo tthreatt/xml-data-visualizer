@@ -18,6 +18,7 @@ def query_csv_rows(
     page: int = 1,
     page_size: int = 100,
     filters: Optional[Dict[str, any]] = None,
+    columns: Optional[List[str]] = None,
 ) -> Tuple[List[Dict[str, str]], int]:
     """
     Query CSV rows with pagination and optional filters.
@@ -28,6 +29,7 @@ def query_csv_rows(
         page: Page number (1-indexed)
         page_size: Number of rows per page
         filters: Optional filter dictionary {column_name: value}
+        columns: Optional list of column names to include in results (all if None)
         
     Returns:
         Tuple of (list of row data dictionaries, total count)
@@ -78,11 +80,15 @@ def query_csv_rows(
             logger.error(f"Row data is not dict or string: type={type(row_data)}, row_index={row.row_index}, value_sample={str(row_data)[:100]}")
             row_data = {}
         
+        # Filter columns if specified
+        if columns:
+            row_data = {k: v for k, v in row_data.items() if k in columns}
+        
         row_data_list.append(row_data)
     
     if row_data_list:
         first_row = row_data_list[0]
-        logger.info(f"Returning rows: count={len(row_data_list)}, first_row_type={type(first_row)}, first_row_keys={list(first_row.keys())[:5] if isinstance(first_row, dict) else 'N/A'}, first_row_sample={dict(list(first_row.items())[:3]) if isinstance(first_row, dict) else 'N/A'}")
+        logger.info(f"Returning rows: count={len(row_data_list)}, first_row_type={type(first_row)}, first_row_keys={list(first_row.keys())[:5] if isinstance(first_row, dict) else 'N/A'}, columns_filtered={columns is not None}")
     else:
         logger.warning(f"No rows returned for import_id={import_id}, page={page}, page_size={page_size}")
     

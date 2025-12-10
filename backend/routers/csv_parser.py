@@ -19,6 +19,7 @@ from models.csv_models import (
     CsvSearchRequest,
     CsvImportResponse,
     CsvRowsResponse,
+    CsvColumnsResponse,
 )
 from utils.csv_processor import (
     combine_csv_files,
@@ -237,11 +238,58 @@ async def get_import(import_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail=str(e))
 
 
+@router.get("/imports/{import_id}/columns", response_model=CsvColumnsResponse)
+async def get_import_columns(
+    import_id: int,
+    prefix: Optional[str] = Query(None, description="Optional prefix to filter columns (e.g., 'practitionerEducation')"),
+    db: Session = Depends(get_db),
+):
+    """
+    Get column metadata for a CSV import, grouped by prefix.
+
+    Args:
+        import_id: Import session ID
+        prefix: Optional prefix to filter columns (e.g., 'practitionerEducation')
+        db: Database session
+
+    Returns:
+        CsvColumnsResponse with columns and prefix groups
+    """
+    try:
+        csv_import = get_csv_import(db, import_id)
+        headers = csv_import.headers
+
+        # Filter by prefix if provided
+        if prefix:
+            headers = [h for h in headers if h.lower().startswith(prefix.lower())]
+
+        # Group columns by prefix (split on first underscore)
+        groups: Dict[str, List[str]] = {}
+        for header in headers:
+            underscore_index = header.find('_')
+            if underscore_index > 0:
+                prefix_key = header[:underscore_index]
+            else:
+                prefix_key = header
+
+            if prefix_key not in groups:
+                groups[prefix_key] = []
+            groups[prefix_key].append(header)
+
+        return CsvColumnsResponse(
+            columns=headers,
+            groups=groups,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
 @router.get("/imports/{import_id}/rows", response_model=CsvRowsResponse)
 async def get_import_rows(
     import_id: int,
     page: int = Query(1, ge=1, description="Page number (1-indexed)"),
     page_size: int = Query(100, ge=1, le=1000, description="Number of rows per page"),
+    columns: Optional[List[str]] = Query(None, description="Optional list of column names to return (all if not specified)"),
     db: Session = Depends(get_db),
 ):
     """
@@ -251,17 +299,18 @@ async def get_import_rows(
         import_id: Import session ID
         page: Page number (1-indexed)
         page_size: Number of rows per page (max 1000)
+        columns: Optional list of column names to return (reduces payload size)
         db: Database session
 
     Returns:
         CsvRowsResponse with paginated rows
     """
     try:
-        rows, total_count = query_csv_rows(db, import_id, page, page_size)
+        rows, total_count = query_csv_rows(db, import_id, page, page_size, columns=columns)
         total_pages = (total_count + page_size - 1) // page_size
 
         # Log response structure for debugging
-        logger.info(f"API response for import_id={import_id}, page={page}: rows_count={len(rows)}, total_count={total_count}")
+        logger.info(f"API response for import_id={import_id}, page={page}: rows_count={len(rows)}, total_count={total_count}, columns_filtered={columns is not None}")
         if rows:
             first_row = rows[0]
             logger.info(f"First row in API response: type={type(first_row)}, is_dict={isinstance(first_row, dict)}, keys={list(first_row.keys())[:5] if isinstance(first_row, dict) else 'N/A'}, sample={dict(list(first_row.items())[:3]) if isinstance(first_row, dict) else 'N/A'}")

@@ -181,3 +181,22 @@ class CsvRowsResponse(BaseModel):
                 "total_pages": 10,
             }
         }
+
+
+class CsvColumnsResponse(BaseModel):
+    """Response model for CSV column metadata."""
+
+    columns: List[str] = Field(..., description="List of all column names")
+    groups: Dict[str, List[str]] = Field(..., description="Columns grouped by prefix")
+
+    class Config:
+        """Pydantic config."""
+
+        json_schema_extra = {
+            "example": {
+                "columns": ["practitionerEducation_degree", "practitionerEducation_school"],
+                "groups": {
+                    "practitionerEducation": ["practitionerEducation_degree", "practitionerEducation_school"],
+                },
+            }
+        }

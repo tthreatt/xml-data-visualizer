@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { XmlNode } from '../types/xml';
-import { CsvData } from '../types/csv';
+import { CsvData, CsvColumnsResponse } from '../types/csv';
 import { flattenXml } from '../utils/export';
+import ColumnSelector from './ColumnSelector';
 import './TableView.css';
 
 interface TableViewProps {
@@ -17,6 +18,12 @@ interface TableViewProps {
   };
   onPageChange?: (page: number) => void;
   loading?: boolean;
+  // Column selection props
+  selectedColumns?: Set<string>;
+  setSelectedColumns?: (columns: Set<string>) => void;
+  columnMetadata?: CsvColumnsResponse | null;
+  fetchColumns?: () => Promise<CsvColumnsResponse | null>;
+  importId?: number | null;
 }
 
 export default function TableView({
@@ -26,17 +33,38 @@ export default function TableView({
   csvPagination,
   onPageChange,
   loading = false,
+  selectedColumns,
+  setSelectedColumns,
+  columnMetadata,
+  fetchColumns,
+  importId,
 }: TableViewProps) {
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [filterText, setFilterText] = useState('');
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set());
+  const [showColumnSelector, setShowColumnSelector] = useState(false);
 
   const isCsvData = (d?: XmlNode | CsvData): d is CsvData => {
     return d !== undefined && 'headers' in d && 'rows' in d;
   };
 
   const isCsvApiMode = csvRows !== undefined && csvHeaders !== undefined;
+
+  // Fetch columns metadata when CSV data is loaded
+  useEffect(() => {
+    if (isCsvApiMode && importId && fetchColumns && !columnMetadata) {
+      fetchColumns();
+    }
+  }, [importId, fetchColumns, columnMetadata, isCsvApiMode]);
+
+  // Use selectedColumns if available, otherwise fall back to visibleColumns
+  const effectiveSelectedColumns = useMemo(() => {
+    if (isCsvApiMode && selectedColumns && selectedColumns.size > 0) {
+      return selectedColumns;
+    }
+    return visibleColumns;
+  }, [isCsvApiMode, selectedColumns, visibleColumns]);
 
   // Helper function to extract header prefix (type grouping)
   const getHeaderPrefix = (header: string): string => {
@@ -55,13 +83,18 @@ export default function TableView({
 
     // Determine which columns to show
     let colsToGroup: string[];
-    if (allCols.length > 100 && visibleColumns.size === 0) {
+    if (isCsvApiMode && effectiveSelectedColumns.size > 0) {
+      // Use selected columns if available
+      colsToGroup = Array.from(effectiveSelectedColumns);
+    } else if (allCols.length > 100 && effectiveSelectedColumns.size === 0) {
       colsToGroup = allCols.slice(0, 100);
-      if (visibleColumns.size === 0) {
+      if (effectiveSelectedColumns.size === 0 && setSelectedColumns) {
+        setSelectedColumns(new Set(colsToGroup));
+      } else if (effectiveSelectedColumns.size === 0) {
         setVisibleColumns(new Set(colsToGroup));
       }
-    } else if (visibleColumns.size > 0) {
-      colsToGroup = Array.from(visibleColumns);
+    } else if (effectiveSelectedColumns.size > 0) {
+      colsToGroup = Array.from(effectiveSelectedColumns);
     } else {
       colsToGroup = allCols;
     }
@@ -77,7 +110,7 @@ export default function TableView({
     }
 
     return groups;
-  }, [data, csvHeaders, visibleColumns, isCsvApiMode]);
+  }, [data, csvHeaders, effectiveSelectedColumns, isCsvApiMode, setSelectedColumns]);
 
   // Determine columns (flattened from groups for backward compatibility)
   const columns = useMemo(() => {
@@ -93,23 +126,29 @@ export default function TableView({
     if (isCsvApiMode) {
       // CSV API mode - use headers from API
       const allCols = csvHeaders || [];
-      if (allCols.length > 100 && visibleColumns.size === 0) {
-        setVisibleColumns(new Set(allCols.slice(0, 100)));
-        return allCols.slice(0, 100);
+      if (effectiveSelectedColumns.size > 0) {
+        return Array.from(effectiveSelectedColumns);
       }
-      if (visibleColumns.size > 0) {
-        return Array.from(visibleColumns);
+      if (allCols.length > 100 && effectiveSelectedColumns.size === 0) {
+        const limited = allCols.slice(0, 100);
+        if (setSelectedColumns) {
+          setSelectedColumns(new Set(limited));
+        } else {
+          setVisibleColumns(new Set(limited));
+        }
+        return limited;
       }
       return allCols;
     } else if (isCsvData(data)) {
       // Legacy CSV data mode
       const allCols = data.headers;
-      if (allCols.length > 100 && visibleColumns.size === 0) {
-        setVisibleColumns(new Set(allCols.slice(0, 100)));
-        return allCols.slice(0, 100);
+      if (effectiveSelectedColumns.size > 0) {
+        return Array.from(effectiveSelectedColumns);
       }
-      if (visibleColumns.size > 0) {
-        return Array.from(visibleColumns);
+      if (allCols.length > 100 && effectiveSelectedColumns.size === 0) {
+        const limited = allCols.slice(0, 100);
+        setVisibleColumns(new Set(limited));
+        return limited;
       }
       return allCols;
     } else if (data) {
@@ -124,7 +163,7 @@ export default function TableView({
       return Array.from(cols);
     }
     return [];
-  }, [data, csvHeaders, visibleColumns, isCsvApiMode, columnGroups]);
+  }, [data, csvHeaders, effectiveSelectedColumns, isCsvApiMode, columnGroups, setSelectedColumns]);
 
   // Get data to display
   const displayData = useMemo(() => {
@@ -311,6 +350,14 @@ export default function TableView({
     }
   };
 
+  const handleColumnSelectionChange = (newSelection: Set<string>) => {
+    if (setSelectedColumns) {
+      setSelectedColumns(newSelection);
+    } else {
+      setVisibleColumns(newSelection);
+    }
+  };
+
   return (
     <div className="table-view">
       <div className="table-controls">
@@ -322,6 +369,22 @@ export default function TableView({
           className="table-filter"
           disabled={loading}
         />
+        {isCsvApiMode && columnMetadata && (
+          <button
+            onClick={() => setShowColumnSelector(true)}
+            className="column-selector-button"
+            title="Select columns to display"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 3h18v18H3z" />
+              <path d="M3 9h18M9 3v18" />
+            </svg>
+            Columns
+            {effectiveSelectedColumns.size > 0 && (
+              <span className="column-count-badge">{effectiveSelectedColumns.size}</span>
+            )}
+          </button>
+        )}
         <span className="table-count">
           {isCsvApiMode && csvPagination ? (
             <>
@@ -339,7 +402,7 @@ export default function TableView({
             </>
           )}
         </span>
-        {columns.length > 100 && (
+        {columns.length > 0 && (
           <span className="table-count">
             ({columns.length} columns shown)
           </span>
@@ -366,6 +429,19 @@ export default function TableView({
           </div>
         )}
       </div>
+
+      {showColumnSelector && isCsvApiMode && columnMetadata && (
+        <div className="column-selector-modal-overlay" onClick={() => setShowColumnSelector(false)}>
+          <div onClick={(e) => e.stopPropagation()}>
+            <ColumnSelector
+              columns={columnMetadata.columns}
+              selectedColumns={effectiveSelectedColumns}
+              onSelectionChange={handleColumnSelectionChange}
+              onClose={() => setShowColumnSelector(false)}
+            />
+          </div>
+        </div>
+      )}
 
       {loading && (
         <div className="loading-indicator">Loading data...</div>

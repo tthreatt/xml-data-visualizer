@@ -39,3 +39,8 @@ export interface CsvRowsResponse {
   page_size: number;
   total_pages: number;
 }
+
+export interface CsvColumnsResponse {
+  columns: string[];
+  groups: Record<string, string[]>;
+}
