@@ -1,0 +1,131 @@
+---
+description: TDD, ESLint, and Prettier development standards for the grocery list app
+alwaysApply: true
+---
+
+# Development Workflow Standards
+
+## Test-Driven Development (TDD)
+
+### Always write tests first
+Before implementing new features or functionality:
+1. Write failing tests that describe the desired behavior
+2. Implement the minimum code needed to make tests pass
+3. Refactor while keeping tests green
+
+### Test file conventions
+- Place test files in `__tests__` directories adjacent to the code they test
+- Or use `.test.tsx` / `.test.ts` / `.spec.tsx` / `.spec.ts` naming patterns
+- Example: `components/grocery/AddItemForm.tsx` → `components/grocery/__tests__/AddItemForm.test.tsx`
+
+### Testing standards
+- Use Jest and React Testing Library for all frontend tests
+- Write descriptive test names that explain what is being tested
+- Use `describe` blocks to group related tests
+- Test user interactions, not implementation details
+- Ensure all tests pass before marking implementation as complete
+
+### Test coverage
+- Aim for meaningful test coverage, focusing on critical paths and user-facing functionality
+- Run `npm run test:coverage` to check coverage before completing features
+
+## ESLint Code Quality
+
+### Always run ESLint before completing code changes
+- Execute `npm run lint` to check for linting errors
+- Fix ALL ESLint errors (not just warnings) before completing work
+- Use ESLint auto-fix where possible: `npm run lint -- --fix`
+
+### ESLint rules to follow
+- Follow the project's ESLint configuration in `.eslintrc.json`
+- Pay special attention to:
+  - TypeScript type safety rules
+  - React hooks dependencies
+  - Unused variables (use `_` prefix for intentionally unused variables)
+  - Console statements (only `console.warn` and `console.error` allowed)
+
+### Before completing any code change
+- Check for linter errors using `read_lints` tool
+- Fix any reported errors
+- Ensure code follows project linting standards
+
+## Prettier Code Formatting
+
+### Format all code with Prettier
+- Run `npm run format` to auto-format all code files
+- Use `npm run format:check` to verify formatting without making changes
+- Ensure all code is properly formatted before completing work
+
+### Formatting standards
+- Follow the Prettier configuration in `.prettierrc.json`
+- Maintain consistent code style across the entire project
+- Format code automatically when making edits
+
+### Before completing any code change
+- Verify code is properly formatted
+- Run Prettier if formatting is inconsistent
+
+## Code Quality Checklist
+
+Before marking any code change as complete, ensure:
+
+- [ ] Tests are written and passing (`npm test`)
+- [ ] ESLint passes with no errors (`npm run lint`)
+- [ ] Code is properly formatted (`npm run format:check`)
+- [ ] All linter errors are resolved
+- [ ] Code follows TypeScript best practices
+- [ ] React components follow best practices (hooks, props, etc.)
+
+## File Organization
+
+- Keep related files together (components, tests, types)
+- Use TypeScript for all new code
+- Follow Next.js App Router conventions
+- Maintain consistent import ordering
+
+## Workflow for Code Changes
+
+### For new features
+1. Write tests first (TDD)
+2. Implement feature
+3. Run tests to ensure they pass
+4. Check ESLint errors
+5. Format code with Prettier
+6. Verify all checks pass
+
+### For bug fixes
+1. Write a test that reproduces the bug
+2. Fix the bug
+3. Ensure test passes
+4. Run ESLint and fix errors
+5. Format code with Prettier
+
+### For refactoring
+1. Ensure existing tests pass before refactoring
+2. Refactor code
+3. Ensure all tests still pass
+4. Run ESLint and format code
+
+## Tools and Commands
+
+- **Testing:** `npm test` (run tests), `npm run test:watch` (watch mode), `npm run test:coverage` (coverage report)
+- **Linting:** `npm run lint` (check), `npm run lint -- --fix` (auto-fix)
+- **Formatting:** `npm run format` (format), `npm run format:check` (check only)
+
+## Best Practices
+
+1. **Always use the `read_lints` tool** after making code changes to check for linting errors
+2. **Run Prettier** to ensure consistent formatting
+3. **Write tests** for all new functionality
+4. **Keep code simple and readable** - prefer clarity over cleverness
+5. **Follow TypeScript strict mode** - avoid `any` types when possible
+6. **Use meaningful variable and function names**
+7. **Add comments only when necessary** - code should be self-documenting
+
+## Integration with Cursor
+
+When working in Cursor:
+- Use the `read_lints` tool to check for errors after edits
+- Run formatting commands when needed
+- Write tests alongside implementation
+- Verify all checks pass before completing tasks

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<library>
+  <book id="1" isbn="978-0-123456-78-9">
+    <title>The Great Adventure</title>
+    <author>John Doe</author>
+    <year>2023</year>
+    <genre>Adventure</genre>
+  </book>
+  <book id="2" isbn="978-0-987654-32-1">
+    <title>Mystery of the Night</title>
+    <author>Jane Smith</author>
+    <year>2022</year>
+    <genre>Mystery</genre>
+  </book>
+  <book id="3" isbn="978-0-555555-55-5">
+    <title>Science Fiction Tales</title>
+    <author>Bob Johnson</author>
+    <year>2024</year>
+    <genre>Science Fiction</genre>
+  </book>
+</library>
+
