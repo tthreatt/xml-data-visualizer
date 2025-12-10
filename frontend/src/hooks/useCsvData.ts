@@ -3,6 +3,7 @@ import axios from 'axios';
 import { CsvImportResponse, CsvRowsResponse, CsvColumnsResponse } from '../types/csv';
 
 const API_BASE_URL = '/api/csv';
+const PREFERENCES_KEY = 'csv-column-preferences';
 
 export function useCsvData() {
   const [importId, setImportId] = useState<number | null>(null);
@@ -173,6 +174,27 @@ export function useCsvData() {
     [importId]
   );
 
+  // Auto-load saved preferences when columnMetadata is first available
+  useEffect(() => {
+    if (columnMetadata && columnMetadata.columns.length > 0 && selectedColumns.size === 0) {
+      try {
+        const saved = localStorage.getItem(PREFERENCES_KEY);
+        if (saved) {
+          const preferences: string[] = JSON.parse(saved);
+          // Only load preferences that exist in current columns
+          const validPreferences = preferences.filter(col => columnMetadata.columns.includes(col));
+          if (validPreferences.length > 0) {
+            setSelectedColumns(new Set(validPreferences));
+          }
+        }
+      } catch (error) {
+        // Silently fail if preferences can't be loaded
+        console.warn('Failed to load column preferences:', error);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [columnMetadata]); // Only run when columnMetadata changes
+
   // Refetch data when selected columns change (but not on initial mount)
   useEffect(() => {
     if (importId && pagination.page > 0 && rows.length > 0) {
@@ -183,13 +205,34 @@ export function useCsvData() {
   }, [selectedColumns]); // Only refetch when columns change, not on other changes
 
   const goToPage = useCallback(
-    (page: number) => {
+    (page: number, pageSize?: number) => {
       if (importId) {
         const columnsToFetch = selectedColumns.size > 0 ? Array.from(selectedColumns) : undefined;
-        fetchRows(importId, page, pagination.pageSize, columnsToFetch);
+        const effectivePageSize = pageSize ?? pagination.pageSize;
+        fetchRows(importId, page, effectivePageSize, columnsToFetch);
       }
     },
     [importId, pagination.pageSize, fetchRows, selectedColumns]
+  );
+
+  const setPageSize = useCallback(
+    (pageSize: number | 'all') => {
+      if (!importId) return;
+
+      // Calculate effective page size
+      let effectivePageSize: number;
+      if (pageSize === 'all') {
+        // Use total_count if available, otherwise use a large number
+        effectivePageSize = pagination.totalCount > 0 ? pagination.totalCount : 10000;
+      } else {
+        effectivePageSize = pageSize;
+      }
+
+      // Reset to page 1 when page size changes
+      const columnsToFetch = selectedColumns.size > 0 ? Array.from(selectedColumns) : undefined;
+      fetchRows(importId, 1, effectivePageSize, columnsToFetch);
+    },
+    [importId, pagination.totalCount, fetchRows, selectedColumns]
   );
 
   const selectColumnsByPrefix = useCallback((prefix: string) => {
@@ -232,6 +275,7 @@ export function useCsvData() {
     fetchColumns,
     searchRows,
     goToPage,
+    setPageSize,
     selectColumnsByPrefix,
     reset,
   };

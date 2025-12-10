@@ -17,6 +17,7 @@ interface TableViewProps {
     totalPages: number;
   };
   onPageChange?: (page: number) => void;
+  onPageSizeChange?: (pageSize: number | 'all') => void;
   loading?: boolean;
   // Column selection props
   selectedColumns?: Set<string>;
@@ -32,6 +33,7 @@ export default function TableView({
   csvHeaders,
   csvPagination,
   onPageChange,
+  onPageSizeChange,
   loading = false,
   selectedColumns,
   setSelectedColumns,
@@ -57,6 +59,18 @@ export default function TableView({
       fetchColumns();
     }
   }, [importId, fetchColumns, columnMetadata, isCsvApiMode]);
+
+  // Freeze background scrolling when modal is open
+  useEffect(() => {
+    if (showColumnSelector) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showColumnSelector]);
 
   // Use selectedColumns if available, otherwise fall back to visibleColumns
   const effectiveSelectedColumns = useMemo(() => {
@@ -358,6 +372,15 @@ export default function TableView({
     }
   };
 
+  // Determine current page size value for the selector
+  const currentPageSizeValue = useMemo(() => {
+    if (!isCsvApiMode || !csvPagination) return '100';
+    // "all" is selected if pageSize is >= 10000 (our fallback) or equals totalCount
+    const isAllSelected = csvPagination.pageSize >= 10000 || 
+      (csvPagination.totalCount > 0 && csvPagination.pageSize === csvPagination.totalCount);
+    return isAllSelected ? 'all' : String(csvPagination.pageSize);
+  }, [isCsvApiMode, csvPagination]);
+
   return (
     <div className="table-view">
       <div className="table-controls">
@@ -407,6 +430,33 @@ export default function TableView({
             ({columns.length} columns shown)
           </span>
         )}
+        {isCsvApiMode && csvPagination && onPageSizeChange && (
+          <div className="page-size-selector">
+            <label htmlFor="page-size-select" className="page-size-label">
+              Rows per page:
+            </label>
+            <select
+              id="page-size-select"
+              value={currentPageSizeValue}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === 'all') {
+                  onPageSizeChange('all');
+                } else {
+                  onPageSizeChange(Number.parseInt(value, 10));
+                }
+              }}
+              disabled={loading}
+              className="page-size-select"
+            >
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="250">250</option>
+              <option value="500">500</option>
+              <option value="all">All</option>
+            </select>
+          </div>
+        )}
         {isCsvApiMode && csvPagination && csvPagination.totalPages > 1 && (
           <div className="pagination-controls">
             <button
@@ -447,23 +497,24 @@ export default function TableView({
         <div className="loading-indicator">Loading data...</div>
       )}
 
+      {columnGroups && (
+        <div className="column-group-pills-wrapper">
+          <div className="column-group-pills-container">
+            {Array.from(columnGroups.entries()).map(([prefix]) => (
+              <span key={prefix} className="column-group-pill" title={`Group: ${prefix}`}>
+                {prefix}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="table-container">
         <table className="data-table">
           <thead>
             {columnGroups ? (
               // Render column groups with separators
               <>
-                {Array.from(columnGroups.entries()).map(([prefix, groupCols]) => (
-                  <tr key={prefix} className="column-group-header">
-                    <th
-                      colSpan={groupCols.length}
-                      className="column-group-title"
-                      title={`Group: ${prefix}`}
-                    >
-                      {prefix}
-                    </th>
-                  </tr>
-                ))}
                 <tr>
                   {columns.map((column) => (
                     <th

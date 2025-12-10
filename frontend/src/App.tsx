@@ -23,6 +23,7 @@ function App() {
     uploadFiles: uploadCsvFiles,
     pagination: csvPagination,
     goToPage: csvGoToPage,
+    setPageSize: csvSetPageSize,
     selectedColumns,
     setSelectedColumns,
     columnMetadata,
@@ -156,6 +157,7 @@ function App() {
                   csvHeaders={importData.headers}
                   csvPagination={csvPagination}
                   onPageChange={csvGoToPage}
+                  onPageSizeChange={csvSetPageSize}
                   loading={csvLoading}
                   selectedColumns={selectedColumns}
                   setSelectedColumns={setSelectedColumns}
