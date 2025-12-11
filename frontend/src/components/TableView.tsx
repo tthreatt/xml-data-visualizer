@@ -463,7 +463,7 @@ export default function TableView({
               {isDataTruncated ? (
                 <>
                   Showing 1-{MAX_RENDER_ROWS.toLocaleString()} of{' '}
-                  {groupedData.length.toLocaleString()} rows ({MAX_RENDER_ROWS.toLocaleString()}{' '}
+                  {csvPagination.totalCount.toLocaleString()} rows ({MAX_RENDER_ROWS.toLocaleString()}{' '}
                   rendered for performance)
                 </>
               ) : (
@@ -592,7 +592,9 @@ export default function TableView({
           color: '#856404'
         }}>
           <strong>Performance Notice:</strong> Showing first {MAX_RENDER_ROWS.toLocaleString()} of{' '}
-          {groupedData.length.toLocaleString()} rows. Use pagination to view more rows.
+          {isCsvApiMode && csvPagination
+            ? csvPagination.totalCount.toLocaleString()
+            : groupedData.length.toLocaleString()} rows. Use pagination to view more rows.
         </div>
       )}
 
