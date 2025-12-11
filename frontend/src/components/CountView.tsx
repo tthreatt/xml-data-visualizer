@@ -295,6 +295,34 @@ export default function CountView({
     setCountPage(1); // Reset to first page when page size changes
   };
 
+  // Export counts to CSV handler
+  const handleExportCounts = async () => {
+    if (!isCsvApiMode || fieldCounts.length === 0 || !importId) return;
+    try {
+      // Call backend API to stream CSV
+      const response = await axios.post(
+        `${API_BASE_URL}/exports/counts`,
+        {
+          import_id: importId,
+          columns: columns,
+        },
+        {
+          responseType: 'blob',
+        }
+      );
+      // Download CSV file
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `field_counts_${importId}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+    } catch (err) {
+      alert('Failed to export counts to CSV.');
+    }
+  };
+
   return (
     <div className="count-view">
       <div className="count-controls">
@@ -321,6 +349,17 @@ export default function CountView({
                 {effectiveSelectedColumns.size}
               </span>
             )}
+          </button>
+        )}
+        {/* Export to CSV button for CSV mode */}
+        {isCsvApiMode && fieldCounts.length > 0 && (
+          <button
+            onClick={handleExportCounts}
+            className="export-counts-button"
+            title="Export all field counts to CSV"
+            style={{ marginLeft: '1em' }}
+          >
+            Export Counts to CSV
           </button>
         )}
         <span className="count-info">

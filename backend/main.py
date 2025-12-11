@@ -5,6 +5,7 @@ FastAPI application entry point.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import xml_parser, csv_parser
+from routers import csv_export
 from database import init_db
 
 app = FastAPI(
@@ -31,6 +32,7 @@ async def startup_event():
 # Include routers
 app.include_router(xml_parser.router)
 app.include_router(csv_parser.router)
+app.include_router(csv_export.router)
 
 
 @app.get("/")
