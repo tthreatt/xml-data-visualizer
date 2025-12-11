@@ -191,6 +191,7 @@ function App() {
                   columnMetadata={columnMetadata}
                   fetchColumns={() => fetchColumns(importId!)}
                   importId={importId}
+                  importData={importData}
                 />
               ) : null
             ) : null}

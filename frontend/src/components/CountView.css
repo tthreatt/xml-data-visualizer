@@ -154,6 +154,82 @@
   z-index: 1000;
 }
 
+.count-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.count-page-size-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.count-page-size-label {
+  color: #6b6760;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.count-page-size-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d4cfc8;
+  border-radius: 6px;
+  background: #fffcf9;
+  color: #3d3a35;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.count-page-size-select:hover:not(:disabled) {
+  border-color: #c97d60;
+  background: #f7f5f3;
+}
+
+.count-page-size-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.count-pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.count-pagination-button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #d4cfc8;
+  border-radius: 6px;
+  background: #fffcf9;
+  color: #3d3a35;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.count-pagination-button:hover:not(:disabled) {
+  background: #f7f5f3;
+  border-color: #c97d60;
+  color: #c97d60;
+}
+
+.count-pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.count-pagination-info {
+  color: #6b6760;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
 @media (max-width: 768px) {
   .count-controls {
     flex-direction: column;
@@ -168,5 +244,21 @@
 
   .count-values-list {
     max-height: 300px;
+  }
+
+  .count-pagination-controls {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .count-page-size-selector {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .count-pagination-buttons {
+    width: 100%;
+    justify-content: space-between;
   }
 }

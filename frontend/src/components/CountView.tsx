@@ -1,9 +1,12 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import axios from 'axios';
 import { XmlNode } from '../types/xml';
-import { CsvData, CsvColumnsResponse } from '../types/csv';
+import { CsvData, CsvColumnsResponse, CsvRowsResponse, CsvImportResponse } from '../types/csv';
 import { flattenXml } from '../utils/export';
 import ColumnSelector from './ColumnSelector';
 import './CountView.css';
+
+const API_BASE_URL = '/api/csv';
 
 interface CountViewProps {
   data?: XmlNode | CsvData;
@@ -15,6 +18,7 @@ interface CountViewProps {
   columnMetadata?: CsvColumnsResponse | null;
   fetchColumns?: () => Promise<CsvColumnsResponse | null>;
   importId?: number | null;
+  importData?: CsvImportResponse | null;
 }
 
 interface FieldCount {
@@ -37,15 +41,77 @@ export default function CountView({
   columnMetadata,
   fetchColumns,
   importId,
+  importData,
 }: CountViewProps) {
   const [showColumnSelector, setShowColumnSelector] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set());
+  // Pagination state for CountView
+  const [countPage, setCountPage] = useState(1);
+  const [countPageSize, setCountPageSize] = useState(100);
+  const [countPagination, setCountPagination] = useState<{
+    page: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+  } | null>(null);
+  const [countRows, setCountRows] = useState<Record<string, string>[]>([]);
+  const [loadingCountData, setLoadingCountData] = useState(false);
+  const [countError, setCountError] = useState<string | null>(null);
 
   const isCsvData = (d?: XmlNode | CsvData): d is CsvData => {
     return d !== undefined && 'headers' in d && 'rows' in d;
   };
 
   const isCsvApiMode = csvRows !== undefined && csvHeaders !== undefined;
+
+  // Fetch count data for current page when in CSV API mode
+  useEffect(() => {
+    // Clear previous data when importId changes
+    if (importId === null) {
+      setCountRows([]);
+      setCountPagination(null);
+      setCountError(null);
+      setCountPage(1);
+      return;
+    }
+
+    if (isCsvApiMode && importId) {
+      const fetchCountData = async () => {
+        setLoadingCountData(true);
+        setCountError(null);
+
+        try {
+          const response = await axios.get<CsvRowsResponse>(
+            `${API_BASE_URL}/imports/${importId}/rows`,
+            {
+              params: {
+                page: countPage,
+                page_size: countPageSize,
+              },
+            }
+          );
+
+          setCountRows(response.data.rows);
+          setCountPagination({
+            page: response.data.page,
+            pageSize: response.data.page_size,
+            totalCount: response.data.total_count,
+            totalPages: response.data.total_pages,
+          });
+        } catch (err) {
+          if (axios.isAxiosError(err)) {
+            setCountError(err.response?.data?.detail || 'Failed to fetch count data');
+          } else {
+            setCountError('An unexpected error occurred');
+          }
+        } finally {
+          setLoadingCountData(false);
+        }
+      };
+
+      fetchCountData();
+    }
+  }, [isCsvApiMode, importId, countPage, countPageSize]);
 
   // Fetch columns metadata when CSV data is loaded
   useEffect(() => {
@@ -123,10 +189,12 @@ export default function CountView({
     setSelectedColumns,
   ]);
 
-  // Get data to process
+  // Get data to process - use countRows for CSV API mode (paginated)
   const displayData = useMemo(() => {
     if (isCsvApiMode) {
-      return csvRows.map((row) => ({
+      // Use countRows (paginated data for counting)
+      const rowsToUse = countRows.length > 0 ? countRows : [];
+      return rowsToUse.map((row) => ({
         path: '',
         tag: '',
         text: '',
@@ -143,7 +211,7 @@ export default function CountView({
       return flattenXml(data);
     }
     return [];
-  }, [data, csvRows, isCsvApiMode]);
+  }, [data, countRows, isCsvApiMode]);
 
   // Calculate unique counts for each field
   const fieldCounts = useMemo(() => {
@@ -216,6 +284,17 @@ export default function CountView({
     return field.replace('attr:', '');
   };
 
+  const handleCountPageChange = (newPage: number) => {
+    if (countPagination && newPage >= 1 && newPage <= countPagination.totalPages) {
+      setCountPage(newPage);
+    }
+  };
+
+  const handleCountPageSizeChange = (newPageSize: number) => {
+    setCountPageSize(newPageSize);
+    setCountPage(1); // Reset to first page when page size changes
+  };
+
   return (
     <div className="count-view">
       <div className="count-controls">
@@ -245,10 +324,60 @@ export default function CountView({
           </button>
         )}
         <span className="count-info">
-          {fieldCounts.length > 0
-            ? `Showing counts for ${fieldCounts.length} field${fieldCounts.length !== 1 ? 's' : ''}`
-            : 'No fields selected'}
+          {loadingCountData
+            ? `Loading page ${countPage}...`
+            : countError
+              ? `Error: ${countError}`
+              : fieldCounts.length > 0
+                ? countPagination
+                  ? `Showing counts for ${fieldCounts.length} field${fieldCounts.length !== 1 ? 's' : ''} (page ${countPagination.page} of ${countPagination.totalPages}, rows ${countPagination.pageSize * (countPagination.page - 1) + 1}-${Math.min(countPagination.pageSize * countPagination.page, countPagination.totalCount)} of ${countPagination.totalCount.toLocaleString()})`
+                  : `Showing counts for ${fieldCounts.length} field${fieldCounts.length !== 1 ? 's' : ''} (${displayData.length.toLocaleString()} rows)`
+                : 'No fields selected'}
         </span>
+        {isCsvApiMode && countPagination && (
+          <div className="count-pagination-controls">
+            <div className="count-page-size-selector">
+              <label htmlFor="count-page-size-select" className="count-page-size-label">
+                Rows per page:
+              </label>
+              <select
+                id="count-page-size-select"
+                value={countPageSize}
+                onChange={(e) => handleCountPageSizeChange(Number.parseInt(e.target.value, 10))}
+                disabled={loadingCountData}
+                className="count-page-size-select"
+              >
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="250">250</option>
+                <option value="500">500</option>
+              </select>
+            </div>
+            {countPagination.totalPages > 1 && (
+              <div className="count-pagination-buttons">
+                <button
+                  onClick={() => handleCountPageChange(countPagination.page - 1)}
+                  disabled={countPagination.page === 1 || loadingCountData}
+                  className="count-pagination-button"
+                >
+                  Previous
+                </button>
+                <span className="count-pagination-info">
+                  Page {countPagination.page} of {countPagination.totalPages}
+                </span>
+                <button
+                  onClick={() => handleCountPageChange(countPagination.page + 1)}
+                  disabled={
+                    countPagination.page === countPagination.totalPages || loadingCountData
+                  }
+                  className="count-pagination-button"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {showColumnSelector && isCsvApiMode && columnMetadata && (
@@ -267,7 +396,16 @@ export default function CountView({
         </div>
       )}
 
-      {fieldCounts.length === 0 ? (
+      {loadingCountData ? (
+        <div className="count-empty-state">
+          <p>Loading data for counting...</p>
+        </div>
+      ) : countError ? (
+        <div className="count-empty-state">
+          <p>Error loading data: {countError}</p>
+          <p>Please try refreshing the page.</p>
+        </div>
+      ) : fieldCounts.length === 0 ? (
         <div className="count-empty-state">
           <p>No fields selected for counting.</p>
           <p>Use the Columns button to select fields to analyze.</p>

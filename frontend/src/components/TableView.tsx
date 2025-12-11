@@ -5,6 +5,9 @@ import { flattenXml } from '../utils/export';
 import ColumnSelector from './ColumnSelector';
 import './TableView.css';
 
+// Maximum number of rows to render at once to prevent browser crashes
+const MAX_RENDER_ROWS = 500;
+
 interface TableViewProps {
   data?: XmlNode | CsvData;
   // New props for CSV API-based data
@@ -354,6 +357,17 @@ export default function TableView({
     return grouped;
   }, [sortedData, columns, isCsvApiMode, data]);
 
+  // Limit rendered data to prevent browser crashes with large datasets
+  const renderedData = useMemo(() => {
+    if (groupedData.length <= MAX_RENDER_ROWS) {
+      return groupedData;
+    }
+    return groupedData.slice(0, MAX_RENDER_ROWS);
+  }, [groupedData]);
+
+  // Check if data was truncated for rendering
+  const isDataTruncated = groupedData.length > MAX_RENDER_ROWS;
+
   const handleSort = (column: string) => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -400,6 +414,10 @@ export default function TableView({
       csvPagination.pageSize >= 10000 ||
       (csvPagination.totalCount > 0 &&
         csvPagination.pageSize === csvPagination.totalCount);
+    // If "all" is selected but dataset is too large, use MAX_RENDER_ROWS instead
+    if (isAllSelected && csvPagination.totalCount > MAX_RENDER_ROWS) {
+      return String(MAX_RENDER_ROWS);
+    }
     return isAllSelected ? 'all' : String(csvPagination.pageSize);
   }, [isCsvApiMode, csvPagination]);
 
@@ -442,17 +460,38 @@ export default function TableView({
         <span className="table-count">
           {isCsvApiMode && csvPagination ? (
             <>
-              Showing {csvPagination.pageSize * (csvPagination.page - 1) + 1}-
-              {Math.min(
-                csvPagination.pageSize * csvPagination.page,
-                csvPagination.totalCount
-              )}{' '}
-              of {csvPagination.totalCount.toLocaleString()} rows
+              {isDataTruncated ? (
+                <>
+                  Showing 1-{MAX_RENDER_ROWS.toLocaleString()} of{' '}
+                  {groupedData.length.toLocaleString()} rows ({MAX_RENDER_ROWS.toLocaleString()}{' '}
+                  rendered for performance)
+                </>
+              ) : (
+                <>
+                  Showing {csvPagination.pageSize * (csvPagination.page - 1) + 1}-
+                  {Math.min(
+                    csvPagination.pageSize * csvPagination.page,
+                    csvPagination.totalCount
+                  )}{' '}
+                  of {csvPagination.totalCount.toLocaleString()} rows
+                </>
+              )}
             </>
           ) : (
             <>
-              Showing {sortedData.length} of {displayData.length} rows
-              {filterText && ` (filtered)`}
+              {isDataTruncated ? (
+                <>
+                  Showing 1-{MAX_RENDER_ROWS.toLocaleString()} of{' '}
+                  {groupedData.length.toLocaleString()} rows ({MAX_RENDER_ROWS.toLocaleString()}{' '}
+                  rendered for performance)
+                  {filterText && ` (filtered)`}
+                </>
+              ) : (
+                <>
+                  Showing {sortedData.length} of {displayData.length} rows
+                  {filterText && ` (filtered)`}
+                </>
+              )}
             </>
           )}
         </span>
@@ -469,6 +508,10 @@ export default function TableView({
               value={currentPageSizeValue}
               onChange={(e) => {
                 const value = e.target.value;
+                // Prevent selecting "all" if dataset is too large
+                if (value === 'all' && csvPagination.totalCount > MAX_RENDER_ROWS) {
+                  return;
+                }
                 if (value === 'all') {
                   onPageSizeChange('all');
                 } else {
@@ -482,7 +525,17 @@ export default function TableView({
               <option value="100">100</option>
               <option value="250">250</option>
               <option value="500">500</option>
-              <option value="all">All</option>
+              <option
+                value="all"
+                disabled={csvPagination.totalCount > MAX_RENDER_ROWS}
+                title={
+                  csvPagination.totalCount > MAX_RENDER_ROWS
+                    ? `Disabled for datasets larger than ${MAX_RENDER_ROWS.toLocaleString()} rows to prevent performance issues. Use pagination to view all data.`
+                    : undefined
+                }
+              >
+                All
+              </option>
             </select>
           </div>
         )}
@@ -528,6 +581,20 @@ export default function TableView({
       )}
 
       {loading && <div className="loading-indicator">Loading data...</div>}
+
+      {isDataTruncated && (
+        <div className="truncation-warning" style={{
+          padding: '12px',
+          margin: '12px 0',
+          backgroundColor: '#fff3cd',
+          border: '1px solid #ffc107',
+          borderRadius: '4px',
+          color: '#856404'
+        }}>
+          <strong>Performance Notice:</strong> Showing first {MAX_RENDER_ROWS.toLocaleString()} of{' '}
+          {groupedData.length.toLocaleString()} rows. Use pagination to view more rows.
+        </div>
+      )}
 
       {columnGroups && (
         <div className="column-group-pills-wrapper">
@@ -603,7 +670,7 @@ export default function TableView({
             )}
           </thead>
           <tbody>
-            {groupedData.map((record, index) => {
+            {renderedData.map((record, index) => {
               const isGroupStart = (record as any)._groupStart;
               const personId = (record as any)._personId;
 
