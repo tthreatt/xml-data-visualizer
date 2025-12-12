@@ -8,6 +8,11 @@ jest.mock('axios', () => ({
 }));
 
 describe('TableView Export All', () => {
+  beforeEach(() => {
+    // Mock window.alert to suppress jsdom console errors
+    window.alert = jest.fn();
+  });
+
   it('renders Export All to CSV button and triggers export', async () => {
     const csvRows = [
       { col1: 'val1', col2: 'val2' },
