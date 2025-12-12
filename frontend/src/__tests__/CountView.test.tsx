@@ -23,6 +23,11 @@ describe('CountView', () => {
         { data: { field1: 'value2', field2: 'C', field3: 'x' } },
       ],
     };
+    const csvRows = csvData.rows.map((row) => row.data);
+    const columnMetadata: CsvColumnsResponse = {
+      columns: csvHeaders,
+      groups: {},
+    };
 
     it('renders with CSV data', () => {
       render(

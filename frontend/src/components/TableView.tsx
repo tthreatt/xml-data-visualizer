@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useMemo } from 'react';
 import axios from 'axios';
-import { XmlNode } from '../types/xml';
+import { XmlNode, XmlFlattenedRecord } from '../types/xml';
 import { CsvData, CsvColumnsResponse } from '../types/csv';
 import { flattenXml } from '../utils/export';
 import ColumnSelector from './ColumnSelector';
@@ -408,12 +408,12 @@ export default function TableView({
   interface TableRecord {
     path?: string;
     tag?: string;
-    text?: string;
+    text?: string | null;
     attributes?: Record<string, string>;
     [key: string]: unknown;
   }
 
-  const getCellValue = (record: TableRecord, column: string): string => {
+  const getCellValue = (record: { attributes?: Record<string, string>; path?: string; tag?: string; text?: string | null }, column: string): string => {
     if (isCsvApiMode || isCsvData(data)) {
       return record.attributes?.[column] || '';
     } else {
@@ -503,139 +503,6 @@ export default function TableView({
               </span>
             )}
           </button>
-        )}
-      </div>
-
-      {/* Table container and table remain unchanged here */}
-      <div className="table-container">
-        <table className="data-table">
-          {/* ...existing code... */}
-        </table>
-      </div>
-
-      {/* Column group pills (if any) remain here */}
-      {columnGroups && (
-        <div className="column-group-pills-wrapper">
-          <div className="column-group-pills-container">
-            {Array.from(columnGroups.entries()).map(([prefix]) => (
-              <span
-                key={prefix}
-                className="column-group-pill"
-                title={`Group: ${prefix}`}
-              >
-                {prefix}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Controls moved below the table and below column group pills */}
-      <div className="table-controls table-controls-bottom">
-        <span className="table-count">
-          {isCsvApiMode && csvPagination ? (
-            <>
-              {isDataTruncated ? (
-                <>
-                  Showing 1-{MAX_RENDER_ROWS.toLocaleString()} of{' '}
-                  {csvPagination.totalCount.toLocaleString()} rows ({MAX_RENDER_ROWS.toLocaleString()}{' '}
-                  rendered for performance)
-                </>
-              ) : (
-                <>
-                  Showing {csvPagination.pageSize * (csvPagination.page - 1) + 1}-
-                  {Math.min(
-                    csvPagination.pageSize * csvPagination.page,
-                    csvPagination.totalCount
-                  )}{' '}
-                  of {csvPagination.totalCount.toLocaleString()} rows
-                </>
-              )}
-            </>
-          ) : (
-            <>
-              {isDataTruncated ? (
-                <>
-                  Showing 1-{MAX_RENDER_ROWS.toLocaleString()} of{' '}
-                  {groupedData.length.toLocaleString()} rows ({MAX_RENDER_ROWS.toLocaleString()}{' '}
-                  rendered for performance)
-                  {filterText && ` (filtered)`}
-                </>
-              ) : (
-                <>
-                  Showing {sortedData.length} of {displayData.length} rows
-                  {filterText && ` (filtered)`}
-                </>
-              )}
-            </>
-          )}
-        </span>
-        {columns.length > 0 && (
-          <span className="table-count">({columns.length} columns shown)</span>
-        )}
-        {isCsvApiMode && csvPagination && onPageSizeChange && (
-          <div className="page-size-selector">
-            <label htmlFor="page-size-select" className="page-size-label">
-              Rows per page:
-            </label>
-            <select
-              id="page-size-select"
-              value={currentPageSizeValue}
-              onChange={(e) => {
-                const value = e.target.value;
-                // Prevent selecting "all" if dataset is too large
-                if (value === 'all' && csvPagination.totalCount > MAX_RENDER_ROWS) {
-                  return;
-                }
-                if (value === 'all') {
-                  onPageSizeChange('all');
-                } else {
-                  onPageSizeChange(Number.parseInt(value, 10));
-                }
-              }}
-              disabled={loading}
-              className="page-size-select"
-            >
-              <option value="50">50</option>
-              <option value="100">100</option>
-              <option value="250">250</option>
-              <option value="500">500</option>
-              <option
-                value="all"
-                disabled={csvPagination.totalCount > MAX_RENDER_ROWS}
-                title={
-                  csvPagination.totalCount > MAX_RENDER_ROWS
-                    ? `Disabled for datasets larger than ${MAX_RENDER_ROWS.toLocaleString()} rows to prevent performance issues. Use pagination to view all data.`
-                    : undefined
-                }
-              >
-                All
-              </option>
-            </select>
-          </div>
-        )}
-        {isCsvApiMode && csvPagination && csvPagination.totalPages > 1 && (
-          <div className="pagination-controls">
-            <button
-              onClick={() => handlePageChange(csvPagination.page - 1)}
-              disabled={csvPagination.page === 1 || loading}
-              className="pagination-button"
-            >
-              Previous
-            </button>
-            <span className="pagination-info">
-              Page {csvPagination.page} of {csvPagination.totalPages}
-            </span>
-            <button
-              onClick={() => handlePageChange(csvPagination.page + 1)}
-              disabled={
-                csvPagination.page === csvPagination.totalPages || loading
-              }
-              className="pagination-button"
-            >
-              Next
-            </button>
-          </div>
         )}
       </div>
 
@@ -747,7 +614,7 @@ export default function TableView({
             )}
           </thead>
           <tbody>
-            {renderedData.map((record: Record<string, unknown>, index: number) => {
+            {renderedData.map((record, index) => {
               const isGroupStart = (record as { _groupStart?: boolean })._groupStart;
               const personId = (record as { _personId?: string })._personId;
 
@@ -784,6 +651,115 @@ export default function TableView({
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* Pagination and summary controls at the bottom */}
+      <div className="table-controls table-controls-bottom">
+        <span className="table-count">
+          {isCsvApiMode && csvPagination ? (
+            <>
+              {isDataTruncated ? (
+                <>
+                  Showing 1-{MAX_RENDER_ROWS.toLocaleString()} of{' '}
+                  {csvPagination.totalCount.toLocaleString()} rows ({MAX_RENDER_ROWS.toLocaleString()}{' '}
+                  rendered for performance)
+                </>
+              ) : (
+                <>
+                  Showing {csvPagination.pageSize * (csvPagination.page - 1) + 1}-
+                  {Math.min(
+                    csvPagination.pageSize * csvPagination.page,
+                    csvPagination.totalCount
+                  )}{' '}
+                  of {csvPagination.totalCount.toLocaleString()} rows
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              {isDataTruncated ? (
+                <>
+                  Showing 1-{MAX_RENDER_ROWS.toLocaleString()} of{' '}
+                  {groupedData.length.toLocaleString()} rows ({MAX_RENDER_ROWS.toLocaleString()}{' '}
+                  rendered for performance)
+                  {filterText && ` (filtered)`}
+                </>
+              ) : (
+                <>
+                  Showing {sortedData.length} of {displayData.length} rows
+                  {filterText && ` (filtered)`}
+                </>
+              )}
+            </>
+          )}
+        </span>
+        {columns.length > 0 && (
+          <span className="table-count">({columns.length} columns shown)</span>
+        )}
+        {isCsvApiMode && csvPagination && onPageSizeChange && (
+          <div className="page-size-selector">
+            <label htmlFor="page-size-select" className="page-size-label">
+              Rows per page:
+            </label>
+            <select
+              id="page-size-select"
+              value={currentPageSizeValue}
+              onChange={(e) => {
+                const value = e.target.value;
+                // Prevent selecting "all" if dataset is too large
+                if (value === 'all' && csvPagination.totalCount > MAX_RENDER_ROWS) {
+                  return;
+                }
+                if (value === 'all') {
+                  onPageSizeChange('all');
+                } else {
+                  onPageSizeChange(Number.parseInt(value, 10));
+                }
+              }}
+              disabled={loading}
+              className="page-size-select"
+            >
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="250">250</option>
+              <option value="500">500</option>
+              <option
+                value="all"
+                disabled={csvPagination.totalCount > MAX_RENDER_ROWS}
+                title={
+                  csvPagination.totalCount > MAX_RENDER_ROWS
+                    ? `Disabled for datasets larger than ${MAX_RENDER_ROWS.toLocaleString()} rows to prevent performance issues. Use pagination to view all data.`
+                    : undefined
+                }
+              >
+                All
+              </option>
+            </select>
+          </div>
+        )}
+        {isCsvApiMode && csvPagination && csvPagination.totalPages > 1 && (
+          <div className="pagination-controls">
+            <button
+              onClick={() => handlePageChange(csvPagination.page - 1)}
+              disabled={csvPagination.page === 1 || loading}
+              className="pagination-button"
+            >
+              Previous
+            </button>
+            <span className="pagination-info">
+              Page {csvPagination.page} of {csvPagination.totalPages}
+            </span>
+            <button
+              onClick={() => handlePageChange(csvPagination.page + 1)}
+              disabled={
+                csvPagination.page === csvPagination.totalPages || loading
+              }
+              className="pagination-button"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
