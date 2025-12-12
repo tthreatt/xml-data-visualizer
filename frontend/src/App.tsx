@@ -85,6 +85,9 @@ function App() {
 
   return (
     <div className="app">
+      <header className="app-header">
+        <h1>XML Data Visualizer</h1>
+      </header>
       {hasData && (
         <Sidebar
           dataMode={dataMode}
@@ -191,7 +194,6 @@ function App() {
                   columnMetadata={columnMetadata}
                   fetchColumns={() => fetchColumns(importId!)}
                   importId={importId}
-                  importData={importData}
                 />
               ) : null
             ) : null}

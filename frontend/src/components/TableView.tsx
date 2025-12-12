@@ -1,4 +1,6 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import * as React from 'react';
+import { useMemo } from 'react';
+import axios from 'axios';
 import { XmlNode } from '../types/xml';
 import { CsvData, CsvColumnsResponse } from '../types/csv';
 import { flattenXml } from '../utils/export';
@@ -44,11 +46,37 @@ export default function TableView({
   fetchColumns,
   importId,
 }: TableViewProps) {
-  const [sortColumn, setSortColumn] = useState<string | null>(null);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [filterText, setFilterText] = useState('');
-  const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set());
-  const [showColumnSelector, setShowColumnSelector] = useState(false);
+    // Export all data to CSV handler (must be inside component to access state)
+    const handleExportAll = async (): Promise<void> => {
+      if (!isCsvApiMode || !importId || columns.length === 0) return;
+      try {
+        const response = await axios.post(
+          `/api/csv/exports/all`,
+          {
+            import_id: importId,
+            columns: columns,
+          },
+          {
+            responseType: 'blob',
+          }
+        );
+        // Download CSV file
+        const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `all_data_${importId}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode?.removeChild(link);
+      } catch (err) {
+        alert('Failed to export all data to CSV.');
+      }
+    };
+  const [sortColumn, setSortColumn] = React.useState<string | null>(null);
+  const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
+  const [filterText, setFilterText] = React.useState('');
+  const [visibleColumns, setVisibleColumns] = React.useState<Set<string>>(new Set());
+  const [showColumnSelector, setShowColumnSelector] = React.useState(false);
 
   const isCsvData = (d?: XmlNode | CsvData): d is CsvData => {
     return d !== undefined && 'headers' in d && 'rows' in d;
@@ -57,14 +85,14 @@ export default function TableView({
   const isCsvApiMode = csvRows !== undefined && csvHeaders !== undefined;
 
   // Fetch columns metadata when CSV data is loaded
-  useEffect(() => {
+  React.useEffect(() => {
     if (isCsvApiMode && importId && fetchColumns && !columnMetadata) {
       fetchColumns();
     }
   }, [importId, fetchColumns, columnMetadata, isCsvApiMode]);
 
   // Freeze background scrolling when modal is open
-  useEffect(() => {
+  React.useEffect(() => {
     if (showColumnSelector) {
       document.body.style.overflow = 'hidden';
     } else {
@@ -76,7 +104,7 @@ export default function TableView({
   }, [showColumnSelector]);
 
   // Use selectedColumns if available, otherwise fall back to visibleColumns
-  const effectiveSelectedColumns = useMemo(() => {
+  const effectiveSelectedColumns = React.useMemo(() => {
     if (isCsvApiMode && selectedColumns && selectedColumns.size > 0) {
       return selectedColumns;
     }
@@ -90,7 +118,7 @@ export default function TableView({
   };
 
   // Group columns by prefix (type grouping)
-  const columnGroups = useMemo(() => {
+  const columnGroups = React.useMemo(() => {
     if (!isCsvApiMode && !isCsvData(data)) {
       return null; // No grouping for XML
     }
@@ -140,7 +168,7 @@ export default function TableView({
   ]);
 
   // Determine columns (flattened from groups for backward compatibility)
-  const columns = useMemo(() => {
+  const columns = React.useMemo(() => {
     if (columnGroups) {
       // Flatten column groups maintaining order
       const cols: string[] = [];
@@ -200,7 +228,7 @@ export default function TableView({
   ]);
 
   // Get data to display
-  const displayData = useMemo(() => {
+  const displayData = React.useMemo(() => {
     if (isCsvApiMode) {
       // Convert CSV API rows to display format
       // Add safeguard: ensure row is an object
@@ -237,7 +265,7 @@ export default function TableView({
   }, [data, csvRows, isCsvApiMode]);
 
   // Filter data (client-side for XML, server-side for CSV API)
-  const filteredData = useMemo(() => {
+  const filteredData = React.useMemo(() => {
     if (isCsvApiMode) {
       // For CSV API mode, filtering is done server-side
       // Just apply client-side text filter if needed
@@ -377,12 +405,20 @@ export default function TableView({
     }
   };
 
-  const getCellValue = (record: any, column: string): string => {
+  interface TableRecord {
+    path?: string;
+    tag?: string;
+    text?: string;
+    attributes?: Record<string, string>;
+    [key: string]: unknown;
+  }
+
+  const getCellValue = (record: TableRecord, column: string): string => {
     if (isCsvApiMode || isCsvData(data)) {
       return record.attributes?.[column] || '';
     } else {
-      if (column === 'path') return record.path;
-      if (column === 'tag') return record.tag;
+      if (column === 'path') return record.path || '';
+      if (column === 'tag') return record.tag || '';
       if (column === 'text') return record.text || '';
       if (column.startsWith('attr:')) {
         const attrName = column.replace('attr:', '');
@@ -422,7 +458,18 @@ export default function TableView({
   }, [isCsvApiMode, csvPagination]);
 
   return (
-    <div className="table-view">
+      <div className="table-view">
+        {/* Export All to CSV button for CSV API mode */}
+        {isCsvApiMode && columns.length > 0 && importId && (
+          <button
+            onClick={handleExportAll}
+            className="export-counts-button"
+            title="Export all data as shown to CSV"
+            style={{ marginBottom: '1em' }}
+          >
+            Export All to CSV
+          </button>
+        )}
       <div className="table-controls">
         <input
           type="text"
@@ -457,6 +504,34 @@ export default function TableView({
             )}
           </button>
         )}
+      </div>
+
+      {/* Table container and table remain unchanged here */}
+      <div className="table-container">
+        <table className="data-table">
+          {/* ...existing code... */}
+        </table>
+      </div>
+
+      {/* Column group pills (if any) remain here */}
+      {columnGroups && (
+        <div className="column-group-pills-wrapper">
+          <div className="column-group-pills-container">
+            {Array.from(columnGroups.entries()).map(([prefix]) => (
+              <span
+                key={prefix}
+                className="column-group-pill"
+                title={`Group: ${prefix}`}
+              >
+                {prefix}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Controls moved below the table and below column group pills */}
+      <div className="table-controls table-controls-bottom">
         <span className="table-count">
           {isCsvApiMode && csvPagination ? (
             <>
@@ -672,9 +747,9 @@ export default function TableView({
             )}
           </thead>
           <tbody>
-            {renderedData.map((record, index) => {
-              const isGroupStart = (record as any)._groupStart;
-              const personId = (record as any)._personId;
+            {renderedData.map((record: Record<string, unknown>, index: number) => {
+              const isGroupStart = (record as { _groupStart?: boolean })._groupStart;
+              const personId = (record as { _personId?: string })._personId;
 
               return (
                 <React.Fragment key={`fragment-${index}`}>

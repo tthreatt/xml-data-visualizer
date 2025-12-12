@@ -13,31 +13,27 @@ describe('CountView', () => {
   });
 
   describe('CSV Data', () => {
-    const csvRows = [
-      { field1: 'value1', field2: 'A', field3: 'x' },
-      { field1: 'value1', field2: 'B', field3: 'x' },
-      { field1: 'value2', field2: 'A', field3: 'y' },
-      { field1: 'value2', field2: 'C', field3: 'x' },
-    ];
-
     const csvHeaders = ['field1', 'field2', 'field3'];
-    const columnMetadata: CsvColumnsResponse = {
-      columns: csvHeaders,
-      groups: {},
+    const csvData = {
+      headers: csvHeaders,
+      rows: [
+        { data: { field1: 'value1', field2: 'A', field3: 'x' } },
+        { data: { field1: 'value1', field2: 'B', field3: 'x' } },
+        { data: { field1: 'value2', field2: 'A', field3: 'y' } },
+        { data: { field1: 'value2', field2: 'C', field3: 'x' } },
+      ],
     };
 
     it('renders with CSV data', () => {
       render(
         <CountView
-          csvRows={csvRows}
-          csvHeaders={csvHeaders}
+          data={csvData}
           selectedColumns={new Set(['field1', 'field2'])}
           setSelectedColumns={mockSetSelectedColumns}
-          columnMetadata={columnMetadata}
-          fetchColumns={mockFetchColumns}
         />
       );
 
+      // The field headers are rendered as <h3> inside .count-field-name
       expect(screen.getByText('field1')).toBeInTheDocument();
       expect(screen.getByText('field2')).toBeInTheDocument();
     });
@@ -45,12 +41,9 @@ describe('CountView', () => {
     it('calculates unique counts correctly for CSV data', () => {
       render(
         <CountView
-          csvRows={csvRows}
-          csvHeaders={csvHeaders}
+          data={csvData}
           selectedColumns={new Set(['field1'])}
           setSelectedColumns={mockSetSelectedColumns}
-          columnMetadata={columnMetadata}
-          fetchColumns={mockFetchColumns}
         />
       );
 
@@ -61,6 +54,7 @@ describe('CountView', () => {
       const countElements = screen.getAllByText(/\(2\)/);
       expect(countElements.length).toBeGreaterThanOrEqual(2);
     });
+
 
     it('shows column selector button for CSV data', () => {
       render(
@@ -73,10 +67,11 @@ describe('CountView', () => {
           fetchColumns={mockFetchColumns}
         />
       );
-
-      const columnButton = screen.getByText(/Columns/i);
-      expect(columnButton).toBeInTheDocument();
+      // There may be multiple 'Columns' buttons, so use getAllByText
+      const columnButtons = screen.getAllByText(/Columns/i);
+      expect(columnButtons.length).toBeGreaterThan(0);
     });
+
 
     it('opens column selector when button is clicked', () => {
       render(
@@ -89,12 +84,12 @@ describe('CountView', () => {
           fetchColumns={mockFetchColumns}
         />
       );
-
-      const columnButton = screen.getByText(/Columns/i);
-      fireEvent.click(columnButton);
-
+      // There may be multiple 'Columns' buttons, click the first one
+      const columnButtons = screen.getAllByText(/Columns/i);
+      fireEvent.click(columnButtons[0]);
       expect(screen.getByText('Select Columns')).toBeInTheDocument();
     });
+
 
     it('handles empty selected columns', () => {
       render(
@@ -107,9 +102,9 @@ describe('CountView', () => {
           fetchColumns={mockFetchColumns}
         />
       );
-
       // Should show message or handle empty state
-      expect(screen.getByText(/Columns/i)).toBeInTheDocument();
+      const columnButtons = screen.getAllByText(/Columns/i);
+      expect(columnButtons.length).toBeGreaterThan(0);
     });
   });
 

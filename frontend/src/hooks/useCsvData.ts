@@ -40,7 +40,7 @@ export function useCsvData() {
       setError(null);
 
       try {
-        const params: Record<string, any> = {
+        const params: Record<string, unknown> = {
           page,
           page_size: pageSize,
         };
@@ -79,7 +79,7 @@ export function useCsvData() {
     if (!id) return null;
 
     try {
-      const params: Record<string, any> = {};
+      const params: Record<string, unknown> = {};
       if (prefix) {
         params.prefix = prefix;
       }

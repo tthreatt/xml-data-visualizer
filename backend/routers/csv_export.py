@@ -1,3 +1,4 @@
+
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -9,6 +10,8 @@ from services.csv_query import query_csv_rows
 
 router = APIRouter(prefix="/api/csv", tags=["csv"])
 
+
+# Existing export_counts_csv remains unchanged
 @router.post("/exports/counts")
 async def export_counts_csv(request: Request, db: Session = Depends(get_db)):
     """
@@ -42,3 +45,36 @@ async def export_counts_csv(request: Request, db: Session = Depends(get_db)):
             writer.writerow([])  # Blank line between fields
         yield output.getvalue()
     return StreamingResponse(generate_csv(), media_type="text/csv", headers={"Content-Disposition": f"attachment; filename=field_counts_{import_id}.csv"})
+
+
+# New endpoint: export all data for selected columns, matching UI order/headers
+@router.post("/exports/all")
+async def export_all_csv(request: Request, db: Session = Depends(get_db)):
+    """
+    Export all rows for selected columns in a CSV import as a CSV file.
+    Request body: { import_id: int, columns: List[str] }
+    Returns: StreamingResponse with CSV file
+    """
+    body = await request.json()
+    import_id = body.get("import_id")
+    columns = body.get("columns")
+    if not import_id or not columns:
+        raise HTTPException(status_code=400, detail="import_id and columns required")
+
+    # Query all rows for the import, all columns in order
+    rows, total_count = query_csv_rows(db, import_id, page=1, page_size=1000000, columns=columns)
+
+    def generate_csv():
+        output = io.StringIO()
+        writer = csv.writer(output)
+        # Write header row matching UI order
+        writer.writerow(columns)
+        for row in rows:
+            writer.writerow([row.get(col, "") for col in columns])
+        yield output.getvalue()
+
+    return StreamingResponse(
+        generate_csv(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=all_data_{import_id}.csv"}
+    )

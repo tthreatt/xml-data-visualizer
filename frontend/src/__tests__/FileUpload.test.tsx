@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import FileUpload from '../components/FileUpload';
 
 describe('FileUpload', () => {

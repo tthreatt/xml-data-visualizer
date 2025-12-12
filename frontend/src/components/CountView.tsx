@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import { XmlNode } from '../types/xml';
-import { CsvData, CsvColumnsResponse, CsvRowsResponse, CsvImportResponse } from '../types/csv';
+import { CsvData, CsvColumnsResponse, CsvRowsResponse } from '../types/csv';
 import { flattenXml } from '../utils/export';
 import ColumnSelector from './ColumnSelector';
 import './CountView.css';
@@ -18,7 +18,6 @@ interface CountViewProps {
   columnMetadata?: CsvColumnsResponse | null;
   fetchColumns?: () => Promise<CsvColumnsResponse | null>;
   importId?: number | null;
-  importData?: CsvImportResponse | null;
 }
 
 interface FieldCount {
@@ -41,7 +40,6 @@ export default function CountView({
   columnMetadata,
   fetchColumns,
   importId,
-  importData,
 }: CountViewProps) {
   const [showColumnSelector, setShowColumnSelector] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set());
@@ -98,11 +96,11 @@ export default function CountView({
             totalCount: response.data.total_count,
             totalPages: response.data.total_pages,
           });
-        } catch (err) {
-          if (axios.isAxiosError(err)) {
-            setCountError(err.response?.data?.detail || 'Failed to fetch count data');
+        } catch (err: unknown) {
+          if (err && typeof err === 'object' && 'response' in err && err.response && typeof err.response === 'object' && 'data' in err.response && err.response.data && typeof err.response.data === 'object' && 'detail' in err.response.data) {
+            setCountError((err.response.data as { detail?: string }).detail || 'Failed to fetch count data');
           } else {
-            setCountError('An unexpected error occurred');
+            setCountError('Failed to fetch count data');
           }
         } finally {
           setLoadingCountData(false);
